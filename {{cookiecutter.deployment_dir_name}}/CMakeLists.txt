@@ -1,7 +1,7 @@
 ####
 # {{cookiecutter.deployment_display_name}} Deployment:
 #
-# This sets up the  {{cookiecutter.deployment_display_name}} deployment using CMake
+# This sets up the {{cookiecutter.deployment_display_name}} deployment using CMake
 # for use with F prime.
 #
 # This file has several sections.

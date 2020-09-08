@@ -4,8 +4,6 @@ Cookiecutter: F Prime Component
 
 **WARNING:** The template is currently intended to support ATmega specific deployments, so if that is not your goal, the results may be somewhat unexpected.
 
-**WARNING:** Beta version, the documentation is not up to date yet (working on it, but needed to crank out some test deployments internally. Sorry!).
-
 Cookiecutter_ template for a `F Prime`_ deployment, to help with reducing the copy-pasta effect while creating new deployments.
 There are just enough pieces to remember to change/fix, that it is rather challenging to do without a template.
 So here is a template to fill in all the major adjustments, so you can spend time develping a deployment or writing a component instead of scratching your head over why you get weird errors.
@@ -67,23 +65,71 @@ You will be asked for these fields:
 
         Can be set in your ``~/.cookiecutterrc`` config file.
 
-    * - ``component_name``
+    * - ``deployment_display_name``
       - .. code:: python
 
             "My Example"
-      - The printed name of this component for documentation and strings.  It should be concise and convey the purpose of the component.
+      - The printed name of this deployment for documentation and strings.  It should be concise and convey the purpose of the deployment.
 
-    * - ``short_description``
+    * - ``deployment_short_description``
+      - .. code:: python
+
+            "An example deployment [...]"
+      - One line description of the deployment's purpose (used in headers and comments).
+
+    * - ``deployment_slug``
+      - .. code:: python
+
+            "MyExample"
+      - A slug_ is a simplified version of the ``deployment_name``, which will be used for the topology assembly name and file names within the deployment folder structure.  It should be ``TitleCase`` with no spaces or special characters.
+
+    * - ``deployment_dir_name``
+      - .. code:: python
+
+            "MyExample"
+      - This is the name of the deployment's main directory.  The obvious choice is to use your ``deployment_slug`` for this field.
+
+    * - ``deployment_path``
+      - .. code:: python
+
+            "example/path"
+      - This is the path from the F Prime root to the current directory, not including the deployment's folder.  Do not add a ``/`` to the front or back of the path.
+
+    * - ``path_to_fprime_root``
+      - .. code:: python
+
+            "../.."
+      - This is the path from the current directory to the F Prime root, not including the deployment's folder.  Do not add a ``/`` to the front or back of the path.
+
+    * - ``component_name``
+      - .. code:: python
+
+            "Led Blinker"
+      - The printed name of this exerciser component for documentation and strings.  It should be concise and convey the purpose of the component.
+
+    * - ``component_short_description``
       - .. code:: python
 
             "An example component [...]"
-      - One line description of the project (used in headers and comments).
+      - One line description of the project (used in headers and comments).  This should describe the purpose of the component in the Imperetive Voice, not the context where the component is used.
 
-    * - ``component_class_name``
+    * - ``component_slug``
       - .. code:: python
 
-            "MyExampleComponent"
-      - The name of this component's class in the code.  It should be ``CamelCase``.  The autocoder requires the suffix ``Component`` to function properly.
+            "LedBlinker"
+      - A slug_ is a simplified version of the ``component_name``, which will be used for the class name and file names within the component folder structure.  It should be ``TitleCase`` with no spaces or special characters.
+
+    * - ``component_dir_name``
+      - .. code:: python
+
+            "LedBlinker"
+      - This is the name of the component's main directory.  The obvious choice is to use your ``deployment_slug`` for this field.
+
+    * - ``component_explicit_component_suffix``
+      - .. code:: python
+
+            "Component"
+      - The general convention is for F Prime components to have the ``Component`` suffix for file names and class names.  While it is not required, the Autocoder will assume this format, and Autocoder provided templates may be more difficult to adapt if this is not selected.
 
     * - ``component_explicit_common``
       - .. code:: python
@@ -91,17 +137,17 @@ You will be asked for these fields:
             ""
       - If preferred, the cpp file with the common implementation code can be appended with the suffix ``Common``.
 
-    * - ``component_suffix``
+    * - ``component_impl_suffix``
       - .. code:: python
 
-            ""
-      - If preferred, the files and classes can be appended with the suffix ``Impl``.
+            "Impl"
+      - The general convention is for F Prime components to have the ``Impl`` suffix for file names and class names.  While it is not required, the Autocoder will assume this format, and Autocoder provided templates may be more difficult to adapt if this is not selected.
 
-    * - ``component_path``
+    * - ``component_path_to_fprime_root``
       - .. code:: python
 
-            "Prjct/Grp"
-      - This is the path from the F Prime root to the current directory, not including the component's folder.
+            "../../.."
+      - This is the path from the current directory to the F Prime root, not including the components's folder.  Do not add a ``/`` to the front or back of the path (this should auto-populate from the deployment path).
 
     * - ``component_namespace``
       - .. code:: python
@@ -112,8 +158,32 @@ You will be asked for these fields:
     * - ``component_kind``
       - .. code:: python
 
-            "active"
-      - You can choose and active or passive component type.  If you change your mind, is it set in the Autocoder input file.
+            "passive"
+      - You can choose and active or passive component type.  If you change your mind, is it set in the Autocoder input file (and some of the component's port kinds may also affected).
+
+    * - ``component_multiplatform_support``
+      - .. code:: python
+
+            "no"
+      - If you need different implementations of your component based on the target platform, choose ``yes`` to get additional support file templates.
+
+    * - ``component_instance_name``
+      - .. code:: python
+
+            "ledblinker"
+      - This is the variable name given to the instantiation of your component in the topology.
+
+    * - ``startup_arduino_delay_msec``
+      - .. code:: python
+
+            "2000"
+      - Startup delay during the deployment startup, so you can tell if you got the deployment into a boot loop.  This is only available on the ``Arduino`` platform.
+
+    * - ``startup_arduino_log_stream``
+      - .. code:: python
+
+            "Serial"
+      - This is the ``Arduino`` stream where the debug statements for the main deployment will print.
 
     * - ``license``
       - .. code:: python
@@ -127,9 +197,9 @@ You will be asked for these fields:
 
         What license to pick? https://choosealicense.com/
 
-You will still need to run ``fprime-util`` to generate the templates from your autocoder input file.
+You should now have a basic deployment that can be compiled and run.
 
-This requires your component to be included in a deployment.
+If you want to add components to the deployment, you can do that next.
 This can be done by adding a line like this, near the bottom of the deployment's ``CMakeLists.txt`` file::
 
   add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../Prjct/Grp/MyExample")
@@ -137,14 +207,9 @@ This can be done by adding a line like this, near the bottom of the deployment's
 Then you need to (possibly purge) and generate the new cmake config in that deployment::
 
   fprime-util generate
+  fprime-util build
 
-Now you can edit your ``MyExampleComponentAi.xml`` file define the component to your liking, and generate the implementation boilerplate::
-
-  cd MyExample
-  fprime-util impl -b {path/to/your/deployment}
-
-Next, copy the ``-template`` code contents into your ``.hpp`` and ``.cpp`` files.
-Try not to overwrite the freshly generated comments at the top!
+Now you should be able to run the executable from the build folder.
 
 
 Changelog

@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 import datetime
-# import os
+import os
 # import shutil
 # import subprocess
 # import sys
@@ -29,6 +29,13 @@ if __name__ == "__main__":
     replace_contents(join('{{ cookiecutter.component_dir_name }}', 'docs', 'sdd.md'), '<TODAY>', today.strftime("%m/%d/%Y"))
     replace_contents('README.md', '<TODAY>', today.strftime("%m/%d/%Y"))
 
+{% if cookiecutter.component_multiplatform_support == "no" %}
+    mp_str = '{{cookiecutter.component_dir_name}}/{{cookiecutter.component_slug}}{{cookiecutter.component_explicit_component_suffix}}{}{{cookiecutter.component_impl_suffix}}.cpp'
+    rm_list = ['Arduino', 'AVR', 'Linux']
+    for i in rm_list:
+        os.unlink(mp_str.format(i))
+{% endif %}
+
 # /{/% if cookiecutter.sphinx_docs == "no" %}
 #     shutil.rmtree('docs')
 # /{/% endif %}
@@ -53,29 +60,21 @@ if __name__ == "__main__":
 
 ################################################################################
 
-    You will still need to run `fprime-util` to generate the templates
-    from your autocoder input file.
+    You should now have a basic deployment that can be compiled and run.
 
-    This requires your component to be included in a deployment.  This
-    can be done by adding a line like this, near the bottom of the
-    deployment's CMakeLists.txt file:
+    If you want to add components to the deployment, you can do that
+    next.  This can be done by adding a line like this, near the bottom
+    of the deployment's CMakeLists.txt file:
 
-        add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../{{ cookiecutter.deployment_path }}/{{ cookiecutter.component_dir_name }}/{{ cookiecutter.component_dir_name }}")
+        add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../{{ cookiecutter.deployment_path }}/{{ cookiecutter.component_dir_name }}")
 
     Then you need to (possibly purge) and generate the new cmake config
-    in that deployment:
+    in the deployment:
 
         fprime-util generate
+        fprime-util build
 
-    Now you can edit your {{ cookiecutter.component_name }}ComponentAi.xml file
-    define the component to your liking, and generate the implementation
-    boilerplate:
-
-        cd {{ cookiecutter.component_dir_name }}
-        fprime-util impl -b {path/to/your/deployment}
-
-    Next, copy the `-template` code contents into your .hpp and .cpp files.
-    Try not to overwrite the freshly generated comments at the top!
+    Now you should be able to run the executable from the build folder.
 
 """)
 

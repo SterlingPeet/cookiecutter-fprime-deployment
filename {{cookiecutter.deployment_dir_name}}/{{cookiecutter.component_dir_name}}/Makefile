@@ -5,7 +5,7 @@
 
 # derive module name from directory
 
-MODULE_DIR = {{cookiecutter.deployment_path}}/{{cookiecutter.component_dir_name}}/{{cookiecutter.component_dir_name}}
+MODULE_DIR = {{cookiecutter.deployment_path}}/{{cookiecutter.deployment_dir_name}}/{{cookiecutter.component_dir_name}}
 MODULE = $(subst /,,$(MODULE_DIR))
 
 BUILD_ROOT ?= $(subst /$(MODULE_DIR),,$(CURDIR))

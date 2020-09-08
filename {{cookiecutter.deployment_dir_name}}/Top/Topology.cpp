@@ -5,7 +5,7 @@
 #include <Os/Baremetal/TaskRunner/TaskRunner.hpp>
 #include <Fw/Types/MallocAllocator.hpp>
 #include <Drv/ATmegaGpioDriver/ATmegaGpioDriverComponentImpl.hpp>
-#include "{{cookiecutter.deployment_assembly}}SchedContexts.hpp"
+#include "{{cookiecutter.deployment_slug}}SchedContexts.hpp"
 #include "Components.hpp"
 #ifdef ARDUINO
     #include <avr/io.h>
@@ -29,15 +29,15 @@ Svc::RateGroupDriverImpl rateGroupDriverComp("RGDRV", rate_divisors, FW_NUM_ARRA
 
 // Context array variables are passed to rate group members if needed to distinguish one call from another
 // These context must match the rate group members connected in ArduinoTopologyAi.xml
-static NATIVE_UINT_TYPE rg10HzContext[] = { {{cookiecutter.deployment_assembly}}::CONTEXT_{{cookiecutter.deployment_assembly|upper}}_10Hz, 0, 0, 0};
+static NATIVE_UINT_TYPE rg10HzContext[] = { {{cookiecutter.deployment_slug}}::CONTEXT_{{cookiecutter.deployment_slug|upper}}_10Hz, 0, 0, 0};
 Svc::ActiveRateGroupImpl rateGroup10HzComp("RG10Hz",rg10HzContext,FW_NUM_ARRAY_ELEMENTS(rg10HzContext));
-// static NATIVE_UINT_TYPE rg1HzContext[] = {0, 0, {{cookiecutter.deployment_assembly}}::CONTEXT_{{cookiecutter.deployment_assembly|upper}}_1Hz, 0};
+// static NATIVE_UINT_TYPE rg1HzContext[] = {0, 0, {{cookiecutter.deployment_slug}}::CONTEXT_{{cookiecutter.deployment_slug|upper}}_1Hz, 0};
 // Svc::ActiveRateGroupImpl rateGroup1HzComp("RG1Hz",rg1HzContext,FW_NUM_ARRAY_ELEMENTS(rg1HzContext));
 
 // Standard system components
 
 // Arduino specific components
-{{cookiecutter.component_namespace}}::{{cookiecutter.component_name}}Component{{cookiecutter.component_suffix}} {{cookiecutter.component_instance_name}}("{{cookiecutter.component_instance_name}}");
+{{cookiecutter.component_namespace}}::{{cookiecutter.component_slug}}{{cookiecutter.component_explicit_component_suffix}}{{cookiecutter.component_impl_suffix}} {{cookiecutter.component_instance_name}}("{{cookiecutter.component_instance_name}}");
 Arduino::HardwareRateDriver hardwareRateDriver("RateDr", 100);
 Drv::ATmegaGpioDriverComponentImpl ledGpio("ledGpio");
 
@@ -68,9 +68,9 @@ void constructApp() {
 #endif
     // Callback to initialize architecture, connect ports, etc.
     // The contents of the function are autocoded from the
-    // {{cookiecutter.deployment_assembly}}TopologyAppAi.xml, and
+    // {{cookiecutter.deployment_slug}}TopologyAppAi.xml, and
     // incorporates the assembly name.
-    construct{{cookiecutter.deployment_assembly}}Architecture();
+    construct{{cookiecutter.deployment_slug}}Architecture();
 
     // configure things
     ledGpio.setup(DDRB, PORTB, PB5, Drv::ATmegaGpioDriverComponentImpl::GPIO_OUT);

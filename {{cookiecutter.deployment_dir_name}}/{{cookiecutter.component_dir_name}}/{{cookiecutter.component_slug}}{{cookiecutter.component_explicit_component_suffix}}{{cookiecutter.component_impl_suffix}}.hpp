@@ -1,18 +1,18 @@
 // ======================================================================
-// \title  {{cookiecutter.component_name}}Component{{cookiecutter.component_suffix}}.hpp
+// \title  {{cookiecutter.component_slug}}{{cookiecutter.component_explicit_component_suffix}}{{cookiecutter.component_impl_suffix}}.hpp
 // \author {{cookiecutter.full_name}} <{{cookiecutter.email}}>
 // \brief  {{cookiecutter.component_short_description}}
 // ======================================================================
 
-#ifndef {{cookiecutter.component_name}}Component_HPP
-#define {{cookiecutter.component_name}}Component_HPP
+#ifndef {{cookiecutter.component_slug}}Component_HPP
+#define {{cookiecutter.component_slug}}Component_HPP
 
-#include "{{cookiecutter.deployment_path}}/{{cookiecutter.deployment_dir_name}}/{{cookiecutter.component_dir_name}}/{{cookiecutter.component_name}}ComponentAc.hpp"
+#include "{{cookiecutter.deployment_path}}/{{cookiecutter.deployment_dir_name}}/{{cookiecutter.component_dir_name}}/{{cookiecutter.component_slug}}ComponentAc.hpp"
 
 namespace {{cookiecutter.component_namespace}} {
 
-  class {{cookiecutter.component_name}}Component{{cookiecutter.component_explicit_common}}{{cookiecutter.component_suffix}} :
-    public {{cookiecutter.component_name}}Component{{cookiecutter.component_explicit_common}}Base
+  class {{cookiecutter.component_slug}}{{cookiecutter.component_explicit_component_suffix}}{{cookiecutter.component_impl_suffix}} :
+    public {{cookiecutter.component_slug}}ComponentBase
   {
 
     public:
@@ -21,9 +21,9 @@ namespace {{cookiecutter.component_namespace}} {
       // Construction, initialization, and destruction
       // ----------------------------------------------------------------------
 
-      //! Construct object {{cookiecutter.component_name}}Component{{cookiecutter.component_explicit_common}}{{cookiecutter.component_suffix}}
+      //! Construct object {{cookiecutter.component_slug}}{{cookiecutter.component_explicit_component_suffix}}{{cookiecutter.component_impl_suffix}}
       //!
-      {{cookiecutter.component_name}}Component{{cookiecutter.component_explicit_common}}{{cookiecutter.component_suffix}}(
+      {{cookiecutter.component_slug}}{{cookiecutter.component_explicit_component_suffix}}{{cookiecutter.component_impl_suffix}}(
 #if FW_OBJECT_NAMES == 1
           const char *const compName /*!< The component name*/
 #else
@@ -31,15 +31,15 @@ namespace {{cookiecutter.component_namespace}} {
 #endif
       );
 
-      //! Initialize object {{cookiecutter.component_name}}Component{{cookiecutter.component_explicit_common}}{{cookiecutter.component_suffix}}
+      //! Initialize object {{cookiecutter.component_slug}}{{cookiecutter.component_explicit_component_suffix}}{{cookiecutter.component_impl_suffix}}
       //!
       void init(
           const NATIVE_INT_TYPE instance = 0 /*!< The instance number*/
       );
 
-      //! Destroy object {{cookiecutter.component_name}}Component{{cookiecutter.component_explicit_common}}{{cookiecutter.component_suffix}}
+      //! Destroy object {{cookiecutter.component_slug}}{{cookiecutter.component_explicit_component_suffix}}{{cookiecutter.component_impl_suffix}}
       //!
-      ~{{cookiecutter.component_name}}Component{{cookiecutter.component_explicit_common}}{{cookiecutter.component_suffix}}(void);
+      ~{{cookiecutter.component_slug}}{{cookiecutter.component_explicit_component_suffix}}{{cookiecutter.component_impl_suffix}}(void);
 
     PRIVATE:
       //! Blink a given pin
@@ -59,4 +59,4 @@ namespace {{cookiecutter.component_namespace}} {
 
 } // end namespace {{cookiecutter.component_namespace}}
 
-#endif
+#endif // end {{cookiecutter.component_slug}}Component_HPP
