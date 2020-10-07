@@ -21,7 +21,7 @@ namespace {{cookiecutter.component_namespace}} {
     ) :
       {{cookiecutter.component_slug}}ComponentBase(compName),
 #else
-    {{cookiecutter.component_slug}}{{cookiecutter.component_explicit_component_suffix}}{{cookiecutter.component_impl_suffix}}(void),
+    {{cookiecutter.component_slug}}{{cookiecutter.component_explicit_component_suffix}}{{cookiecutter.component_impl_suffix}}(void) :
 #endif
     m_state(false)
   {}
@@ -37,7 +37,7 @@ namespace {{cookiecutter.component_namespace}} {
   void {{cookiecutter.component_slug}}{{cookiecutter.component_explicit_component_suffix}}{{cookiecutter.component_impl_suffix}} ::
     blink()
   {
-      this->gpio_out(0, m_state);
+    this->gpio_out(0, m_state);
   }
 {% endif %}
   {{cookiecutter.component_slug}}{{cookiecutter.component_explicit_component_suffix}}{{cookiecutter.component_impl_suffix}} ::
@@ -56,8 +56,8 @@ namespace {{cookiecutter.component_namespace}} {
         NATIVE_UINT_TYPE context
     )
   {
-      blink();
-      m_state = !m_state;
+    blink();
+    m_state = !m_state;
   }
 
 } // end namespace {{cookiecutter.component_namespace}}

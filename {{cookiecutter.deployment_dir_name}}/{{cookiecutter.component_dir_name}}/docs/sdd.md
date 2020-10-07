@@ -59,10 +59,10 @@ Dictionaries: [HTML]({{cookiecutter.component_slug}}{{cookiecutter.component_exp
 
 ## 4. Module Checklists
 
-Document | Link
--------- | ----
-Design Checklist | [Link](Checklist_Design.xlsx)
-Code Checklist | [Link](Checklist_Code.xlsx)
+Document            | Link
+------------------- | ----
+Design Checklist    | [Link](Checklist_Design.xlsx)
+Code Checklist      | [Link](Checklist_Code.xlsx)
 Unit Test Checklist | [Link](Checklist_Unit_Test.xls)
 
 ## 5. Unit Testing
@@ -77,8 +77,8 @@ Unit Test Checklist | [Link](Checklist_Unit_Test.xls)
 
 ## 6. Change Log
 
-Date | Description
----- | -----------
+Date       | Description
+---------- | -----------
 <TODAY> | Initial Component Design
 
 
