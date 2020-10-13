@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<?xml-model href="../{{cookiecutter.path_to_fprime_root}}/Autocoders/schema/default/topology_schema.rng" type="application/xml" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?xml version='1.0' encoding='UTF-8'?>
+<?xml-model href="../{{cookiecutter.path_to_fprime_root}}/../Autocoders/Python/schema/default/topology_schema.rng" type="application/xml" schematypens="http://relaxng.org/ns/structure/1.0"?>
 <assembly name="{{cookiecutter.deployment_slug}}">
 
     <!-- Import component declarations -->
