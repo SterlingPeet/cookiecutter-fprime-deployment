@@ -1,0 +1,48 @@
+### Example configuration for {{cookiecutter.deployment_slug}} topology
+#
+filters:
+  port-not-connected:
+      - specifier: health.WdogStroke:0
+      - specifier: chanTlm.TlmGet:0
+      # Cmd input index 0 is uplink/ground no seqCmdStatus response
+      - specifier: mn_cmdDisp.seqCmdStatus:0
+      # Extra capacity for array based ports
+      - specifier: cmdDisp.compCmdSend
+      - specifier: cmdDisp.compCmdReg
+      - specifier: cmdDisp.seqCmdStatus
+      - specifier: cmdDisp.seqCmdBuff
+      - specifier: health.PingSend
+      - specifier: health.PingReturn
+      # Rate groups don't always hook up all ports
+      - specifier: rate\d+.RateGroupMemberOut:\d*
+      # Poll port not used with tcpClient, see recv port instead. This covers the removal of the following 3 entries.
+      - specifier: gndClient.poll
+      - specifier: uplink.framedPoll
+      - specifier: uplink.schedIn
+      # Static memory slot at index 3 not needed
+      - specifier: bp_staticMemory.buffer(Dea)|(A)llocate:3
+      # Ports used to control system components
+      - specifier: fileDownlink.*SendFile
+      - specifier: fileDownlink.*FileComplete
+      - specifier: .seqRunIn
+      - specifier: .seqDone
+      # Ping ports unconnected without Health component
+      - specifier: .(p)|(P)ingIn
+      - specifier: .(p)|(P)ingOut
+      # No text logging support (or component)
+      - specifier: .LogText
+      # Only using UART0 for uart driver (for now)
+      - specifier: uartDriver.serialRecvFwBuf
+      - specifier: uartDriver.serialSendFwBuf
+      # Use uart FwBuf, not other ports
+      - specifier: uartDriver.serialSend
+      - specifier: uartDriver.serialRecv
+      # No file transfer to/from ground
+      - specifier: groundIf.fileDownlinkBufferSendIn
+      - specifier: groundIf.fileDownlinkBufferSendOut
+      # only connect readCallback or sendIn, not both
+      - specifier: groundIf.readCallback
+      # TODO: probably should connect this to something
+      - specifier: eventLogger.FatalAnnounce
+exclusions:
+ - HubLinter

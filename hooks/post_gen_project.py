@@ -1,11 +1,11 @@
-from __future__ import print_function
-
 import datetime
+from glob import glob
+from pathlib import Path
+import re
 import os
-# import shutil
-# import subprocess
-# import sys
 from os.path import join
+
+from lxml import etree
 
 try:
     from click.termui import secho
@@ -23,18 +23,79 @@ def replace_contents(filename, what, replacement):
     with open(filename, 'w') as fh:
         fh.write(changelog.replace(what, replacement))
 
+
+def get_class_name(comp_type, hpp_list):
+    for hpp in hpp_list:
+        with open(hpp) as fh:
+            match = re.search('class .*?ComponentBase', fh.read(), re.DOTALL).group(0)
+            comp_name = match.split(':')[0].split(' ')[1].strip()
+            if comp_type in comp_name:
+                return comp_name
+    return comp_type
+
+
 if __name__ == "__main__":
+    # Set some dates
     today = datetime.date.today()
-    # replace_contents('CHANGELOG.rst', '<TODAY>', today.strftime("%Y-%m-%d"))
     replace_contents(join('{{ cookiecutter.component_dir_name }}', 'docs', 'sdd.md'), '<TODAY>', today.strftime("%m/%d/%Y"))
     replace_contents('README.md', '<TODAY>', today.strftime("%m/%d/%Y"))
 
+    # Delete multi-platform component files, if not desired
 {% if cookiecutter.component_multiplatform_support == "no" %}
     mp_str = '{{cookiecutter.component_dir_name}}/{{cookiecutter.component_slug}}{{cookiecutter.component_explicit_component_suffix}}{}{{cookiecutter.component_impl_suffix}}.cpp'
     rm_list = ['Arduino', 'AVR', 'Linux']
     for i in rm_list:
         os.unlink(mp_str.format(i))
 {% endif %}
+
+    # Populate Components.hpp
+    topology_filename = join('Top', '{{cookiecutter.deployment_slug}}TopologyAppAi.xml')
+    components_hpp_filename = join('Top', 'Components.hpp')
+    comp_include_declarations = ''
+    comp_instance_declarations = ''
+    with open(topology_filename) as fh:
+        top_tree = etree.parse(fh)
+        top_root = top_tree.getroot()
+        comp_includes = []
+        comp_incl_list = []
+        comp_incl_paths = []
+        comp_list = []
+        comp_inst_list = []
+        for item in top_root:
+            if item.tag == 'instance':
+                comp_list.append(item)
+            if item.tag == 'import_component_type':
+                comp_includes.append(item)
+        for include in comp_includes:
+            include_path = Path(include.text)
+            # This is a hack because Time components don't follow the modern pattern
+            if 'TimeComponent' in str(include_path):
+                include_path = Path('Svc/LinuxTime/LinuxTimeImpl.hpp')
+            folder = Path('..' + os.sep + '{{cookiecutter.deployment_path_to_fprime_root}}' + os.sep + str(include_path.parent))
+            hpps = glob(str(folder) + os.sep + '*.hpp')
+            for hpp in hpps:
+                if hpp[-7:] != 'Cfg.hpp':
+                    long_hpp = Path(hpp)
+                    comp_incl_list.append('#include <{}{}{}>'.format(include_path.parent,
+                                                                 os.sep,
+                                                                 long_hpp.name))
+                    comp_incl_paths.append(long_hpp)
+        comp_incl_list.sort()
+        comp_include_declarations = '\n'.join(comp_incl_list)
+        for comp in comp_list:
+            class_name = get_class_name(comp.get('type'), comp_incl_paths)
+            comp_inst_list.append('extern {}::{} {};'.format(
+                comp.get('namespace'),
+                class_name,
+                comp.get('name')))
+        comp_inst_list.sort()
+        comp_instance_declarations = '\n'.join(comp_inst_list)
+    replace_contents(components_hpp_filename,
+                     '<COMPONENT_INCLUDES>',
+                     comp_include_declarations)
+    replace_contents(components_hpp_filename,
+                     '<COMPONENT_INSTANCE_DECLARATIONS>',
+                     comp_instance_declarations)
 
 # /{/% if cookiecutter.sphinx_docs == "no" %}
 #     shutil.rmtree('docs')
@@ -49,7 +110,7 @@ if __name__ == "__main__":
 ################################################################################
 ################################################################################
 
-    You have succesfully created the `{{ cookiecutter.component_name }}` component.
+    You have succesfully created the `{{ cookiecutter.deployment_display_name }}` deployment.
 
 ################################################################################
 

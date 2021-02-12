@@ -1,49 +1,246 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<?xml-model href="../{{cookiecutter.path_to_fprime_root}}/../Autocoders/Python/schema/default/topology_schema.rng" type="application/xml" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?xml-model href="../{{cookiecutter.deployment_path_to_fprime_root}}/../Autocoders/Python/schema/default/topology_schema.rng" type="application/xml" schematypens="http://relaxng.org/ns/structure/1.0"?>
 <assembly name="{{cookiecutter.deployment_slug}}">
 
     <!-- Import component declarations -->
 
+    <import_component_type>ATmega/AssertReset/AssertResetComponentAi.xml</import_component_type>
     <import_component_type>Svc/ActiveRateGroup/ActiveRateGroupComponentAi.xml</import_component_type>
     <import_component_type>Svc/RateGroupDriver/RateGroupDriverComponentAi.xml</import_component_type>
+    <import_component_type>Svc/TlmChan/TlmChanComponentAi.xml</import_component_type>
+    <import_component_type>Svc/CmdDispatcher/CommandDispatcherComponentAi.xml</import_component_type>
+    <import_component_type>Svc/GroundInterface/GroundInterfaceComponentAi.xml</import_component_type>
+    <import_component_type>Svc/ActiveLogger/ActiveLoggerComponentAi.xml</import_component_type>
+    <import_component_type>Drv/ATmegaSerialDriver/ATmegaSerialDriverComponentAi.xml</import_component_type>
+{%- if cookiecutter.deployment_parameter_support == "yes" %}
+    <import_component_type>ATmega/EePrmDb/EePrmDbComponentAi.xml</import_component_type>
+{%- endif %}
     <import_component_type>ATmega/HardwareRateDriver/HardwareRateDriverComponentAi.xml</import_component_type>
     <import_component_type>Drv/ATmegaGpioDriver/ATmegaGpioDriverComponentAi.xml</import_component_type>
     <import_component_type>{{cookiecutter.deployment_path}}/{{cookiecutter.deployment_dir_name}}/{{cookiecutter.component_dir_name}}/{{cookiecutter.component_slug}}ComponentAi.xml</import_component_type>
+    <import_component_type>Svc/Time/TimeComponentAi.xml</import_component_type>
 
     <!-- Declare component instances - must match names in Components.hpp -->
 
-    <instance namespace="Svc" name="rateGroup10HzComp" type="ActiveRateGroup" base_id="200" base_id_window="20"/>
+    <!-- Core C&DH Components -->
 
-    <!-- <instance namespace="Svc" name="rateGroup1HzComp" type="ActiveRateGroup" base_id="300" base_id_window="20"/> -->
+    <instance namespace="ATmega" name="assertResetter" type="AssertReset" base_id="1" base_id_window="20"/>
+    <instance namespace="Svc" name="cmdDisp" type="CommandDispatcher" base_id="101" base_id_window="20"/>
+    <instance namespace="Svc" name="chanTlm" type="TlmChan" base_id="201" base_id_window="20"/>
+    <instance namespace="Svc" name="eventLogger" type="ActiveLogger" base_id="301" base_id_window="20"/>
+{%- if cookiecutter.deployment_parameter_support == "yes" %}
+    <instance namespace="ATmega" name="eePrmDb" type="EePrmDb" base_id="401" base_id_window="20"/>
+{%- endif %}
+    <instance namespace="Svc" name="groundIf" type="GroundInterface" base_id="501" base_id_window="20"/>
+    <instance namespace="Svc" name="linuxTime" type="Time" base_id="601" base_id_window="20"/>
 
-    <instance namespace="Svc" name="rateGroupDriverComp" type="RateGroupDriver" base_id="1700" base_id_window="20"/>
+    <!-- Communications driver. May be swapped with other comm drivers like UART -->
 
-    <instance namespace="Arduino" name="hardwareRateDriver" type="HardwareRateDriver" base_id="1800" base_id_window="20"/>
+    <instance namespace="Drv" name="uartDriver" type="ATmegaSerialDriver" base_id="701" base_id_window="20"/>
 
-    <instance namespace="Drv" name="ledGpio" type="ATmegaGpioDriver" base_id="1900" base_id_window="20"/>
+    <!-- Rate Group Components -->
 
-    <instance namespace="{{cookiecutter.component_namespace}}" name="{{cookiecutter.component_instance_name}}" type="{{cookiecutter.component_slug}}" base_id="2000" base_id_window="20"/>
+    <instance namespace="Arduino" name="hardwareRateDriver" type="HardwareRateDriver" base_id="801" base_id_window="20"/>
+    <instance namespace="Svc" name="rateGroupDriverComp" type="RateGroupDriver" base_id="901" base_id_window="20"/>
+    <!-- <instance namespace="Svc" name="rateGroup1HzComp" type="ActiveRateGroup" base_id="1001" base_id_window="20"/> -->
+    <instance namespace="Svc" name="rateGroup10HzComp" type="ActiveRateGroup" base_id="1101" base_id_window="20"/>
 
-    <!--  Choose one of the following -->
-    <!-- <instance namespace="Arduino" name="comm" type="SerialDriver" base_id="2100" base_id_window="20"/> -->
+    <!-- Reference Example Components -->
+
+    <instance namespace="Drv" name="ledGpio" type="ATmegaGpioDriver" base_id="1201" base_id_window="20"/>
+    <instance namespace="{{cookiecutter.component_namespace}}" name="{{cookiecutter.component_instance_name}}" type="{{cookiecutter.component_slug}}" base_id="1301" base_id_window="20"/>
+
+    <!-- Connections -->
+    <!-- Communications driver connections -->
+    <connection name="CommunicationRecv">
+        <source component="groundIf" port="readPoll" type="Fw::BufferSend" num="0"/>
+        <target component="uartDriver" port="serialRecvFwBuf" type="Fw::BufferSend" num="0"/>
+    </connection>
+    <connection name="CommunicationSend">
+        <source component="groundIf" port="write" type="Fw::BufferSend" num="0"/>
+        <target component="uartDriver" port="serialSendFwBuf" type="Fw::BufferSend" num="0"/>
+    </connection>
 
     <!-- Command Registration/Dispatch/Reply Connections -->
 
     <!-- Command Registration Ports - Registration port number must match dispatch port for each component -->
 
+    <connection name="CmdDispReg">
+        <source component="cmdDisp" port="CmdReg" type="CmdReg" num="0"/>
+        <target component="cmdDisp" port="compCmdReg" type="CmdReg" num="1"/>
+    </connection>
+    <connection name="eventLoggerReg">
+        <source component="eventLogger" port="CmdReg" type="CmdReg" num="0"/>
+        <target component="cmdDisp" port="compCmdReg" type="CmdReg" num="2"/>
+    </connection>
+{%- if cookiecutter.deployment_parameter_support == "yes" %}
+    <connection name="eePrmDbReg">
+        <source component="eePrmDb" port="CmdReg" type="CmdReg" num="0"/>
+        <target component="cmdDisp" port="compCmdReg" type="CmdReg" num="3"/>
+    </connection>
+{%- endif %}
+    <connection name="{{cookiecutter.component_instance_name}}Reg">
+        <source component="{{cookiecutter.component_instance_name}}" port="CmdReg" type="CmdReg" num="0"/>
+        <target component="cmdDisp" port="compCmdReg" type="CmdReg" num="4"/>
+    </connection>
+
     <!-- Command Dispatch Ports - Dispatch port number must match registration port for each component -->
+
+    <connection name="CmdDispDisp">
+        <source component="cmdDisp" port="compCmdSend" type="Cmd" num="1"/>
+        <target component="cmdDisp" port="CmdDisp" type="Cmd" num="0"/>
+    </connection>
+    <connection name="eventLoggerDisp">
+        <source component="cmdDisp" port="compCmdSend" type="Cmd" num="2"/>
+        <target component="eventLogger" port="CmdDisp" type="Cmd" num="0"/>
+    </connection>
+{%- if cookiecutter.deployment_parameter_support == "yes" %}
+    <connection name="eePrmDbDisp">
+        <source component="cmdDisp" port="compCmdSend" type="Cmd" num="3"/>
+        <target component="eePrmDb" port="CmdDisp" type="Cmd" num="0"/>
+    </connection>
+{%- endif %}
+    <connection name="{{cookiecutter.component_instance_name}}Disp">
+        <source component="cmdDisp" port="compCmdSend" type="Cmd" num="4"/>
+        <target component="{{cookiecutter.component_instance_name}}" port="CmdDisp" type="Cmd" num="0"/>
+    </connection>
 
     <!-- Command Reply Ports - Go to the same response port on the dispatcher -->
 
+    <connection name="CmdDispReply">
+        <source component="cmdDisp" port="CmdStatus" type="CmdResponse" num="0"/>
+        <target component="cmdDisp" port="compCmdStat" type="CmdResponse" num="0"/>
+    </connection>
+    <connection name="eventLoggerReply">
+        <source component="eventLogger" port="CmdStatus" type="CmdResponse" num="0"/>
+        <target component="cmdDisp" port="compCmdStat" type="CmdResponse" num="0"/>
+    </connection>
+{%- if cookiecutter.deployment_parameter_support == "yes" %}
+    <connection name="eePrmDbReply">
+        <source component="eePrmDb" port="CmdStatus" type="CmdResponse" num="0"/>
+        <target component="cmdDisp" port="compCmdStat" type="CmdResponse" num="0"/>
+    </connection>
+{%- endif %}
+    <connection name="{{cookiecutter.component_instance_name}}Reply">
+        <source component="{{cookiecutter.component_instance_name}}" port="CmdStatus" type="CmdResponse" num="0"/>
+        <target component="cmdDisp" port="compCmdStat" type="CmdResponse" num="0"/>
+    </connection>
+
+    <!-- Sequencer Connections - should not conflict with uplink port -->
+
     <!-- Event Logger Binary Connections -->
+
+    <connection name="groundIfLog">
+        <source component="groundIf" port="Log" type="Log" num="0"/>
+        <target component="eventLogger" port="LogRecv" type="Log" num="0"/>
+    </connection>
+    <connection name="CmdDispLog">
+        <source component="cmdDisp" port="Log" type="Log" num="0"/>
+        <target component="eventLogger" port="LogRecv" type="Log" num="0"/>
+    </connection>
+    <connection name="EventLoggerLog">
+        <source component="eventLogger" port="Log" type="Log" num="0"/>
+        <target component="eventLogger" port="LogRecv" type="Log" num="0"/>
+    </connection>
+{%- if cookiecutter.deployment_parameter_support == "yes" %}
+    <connection name="eePrmDbLog">
+        <source component="eePrmDb" port="Log" type="Log" num="0"/>
+        <target component="eventLogger" port="LogRecv" type="Log" num="0"/>
+    </connection>
+{%- endif %}
+    <connection name="RG10hzEv">
+         <source component="rateGroup10HzComp" port="Log" type="Log" num="0"/>
+         <target component="eventLogger" port="LogRecv" type="Log" num="0"/>
+    </connection>
+    <connection name="{{cookiecutter.component_instance_name}}Ev">
+         <source component="{{cookiecutter.component_instance_name}}" port="Log" type="Log" num="0"/>
+         <target component="eventLogger" port="LogRecv" type="Log" num="0"/>
+    </connection>
 
     <!-- Event Logger Text Connections -->
 
     <!-- Telemetry Connections -->
 
-    <!-- Time Connections -->
+    <connection name="cmdDispTlm">
+        <source component="cmdDisp" port="Tlm" type="Tlm" num="0"/>
+        <target component="chanTlm" port="TlmRecv" type="Tlm" num="0"/>
+    </connection>
+    <!-- <connection name="Rg1HzTlm">
+        <source component="rateGroup1HzComp" port="Tlm" type="Tlm" num="0"/>
+        <target component="chanTlm" port="TlmRecv" type="Tlm" num="0"/>
+    </connection> -->
+    <connection name="Rg10HzTlm">
+        <source component="rateGroup10HzComp" port="Tlm" type="Tlm" num="0"/>
+        <target component="chanTlm" port="TlmRecv" type="Tlm" num="0"/>
+    </connection>
+    <connection name="PrmBlinkTlm">
+        <source component="{{cookiecutter.component_instance_name}}" port="Tlm" type="Tlm" num="0"/>
+        <target component="chanTlm" port="TlmRecv" type="Tlm" num="0"/>
+    </connection>
+    <connection name="UartTlm">
+        <source component="uartDriver" port="Tlm" type="Tlm" num="0"/>
+        <target component="chanTlm" port="TlmRecv" type="Tlm" num="0"/>
+    </connection>
 
-    <!-- Rate Group Connections -->
+    <!-- Parameter Connections -->
+{% if cookiecutter.deployment_parameter_support == "yes" %}
+    <connection name="{{cookiecutter.component_instance_name}}PrmGet">
+        <source component="{{cookiecutter.component_instance_name}}" port="ParamGet" type="PrmGet" num="0"/>
+        <target component="eePrmDb" port="getPrm" type="PrmGet" num="0"/>
+    </connection>
+    <connection name="{{cookiecutter.component_instance_name}}PrmSet">
+        <source component="{{cookiecutter.component_instance_name}}" port="ParamSet" type="PrmSet" num="0"/>
+        <target component="eePrmDb" port="setPrm" type="PrmSet" num="0"/>
+    </connection>
+{%- endif %}
+
+    <!-- Time Connections -->
+{% if cookiecutter.deployment_parameter_support == "yes" %}
+    <connection name="prmDbTime">
+        <source component="eePrmDb" port="Time" type="Time" num="0"/>
+        <target component="linuxTime" port="timeGetPort" type="Time" num="0"/>
+    </connection>
+{%- endif %}
+    <connection name="eventLoggerTime">
+        <source component="eventLogger" port="Time" type="Time" num="0"/>
+        <target component="linuxTime" port="timeGetPort" type="Time" num="0"/>
+    </connection>
+    <!-- <connection name="rg1HzTime">
+         <source component="rateGroup1HzComp" port="Time" type="Time" num="0"/>
+         <target component="linuxTime" port="timeGetPort" type="Time" num="0"/>
+    </connection> -->
+    <connection name="rg10HzTime">
+         <source component="rateGroup10HzComp" port="Time" type="Time" num="0"/>
+         <target component="linuxTime" port="timeGetPort" type="Time" num="0"/>
+    </connection>
+    <connection name="cmdDispTime">
+        <source component="cmdDisp" port="Time" type="Time" num="0"/>
+        <target component="linuxTime" port="timeGetPort" type="Time" num="0"/>
+    </connection>
+<!--     <connection name="assertResetterTime">
+        <source component="assertResetter" port="Time" type="Time" num="0"/>
+        <target component="linuxTime" port="timeGetPort" type="Time" num="0"/>
+    </connection> -->
+    <connection name="groundIfTime">
+        <source component="groundIf" port="Time" type="Time" num="0"/>
+        <target component="linuxTime" port="timeGetPort" type="Time" num="0"/>
+    </connection>
+<!--     <connection name="rateGroupDriverCompTime">
+        <source component="rateGroupDriverComp" port="Time" type="Time" num="0"/>
+        <target component="linuxTime" port="timeGetPort" type="Time" num="0"/>
+     </connection> -->
+<!--     <connection name="hardwareRateDriverTime">
+         <source component="hardwareRateDriver" port="Time" type="Time" num="0"/>
+         <target component="linuxTime" port="timeGetPort" type="Time" num="0"/>
+    </connection> -->
+    <connection name="{{cookiecutter.component_instance_name}}Time">
+         <source component="{{cookiecutter.component_instance_name}}" port="Time" type="Time" num="0"/>
+         <target component="linuxTime" port="timeGetPort" type="Time" num="0"/>
+    </connection>
+    <connection name="uartDriverTime">
+         <source component="uartDriver" port="Time" type="Time" num="0"/>
+         <target component="linuxTime" port="timeGetPort" type="Time" num="0"/>
+    </connection>
 
     <!-- Linux Timer Connection -->
     <!--<connection name="LinuxTimer">
@@ -57,6 +254,7 @@
         <target component="ledGpio" port="gpioWrite" type="GpioWrite" num="0"/>
     </connection>
 
+    <!-- Rate Group Connections -->
 
     <!-- Connect the Hardware Driver to the rate group driver -->
     <connection name="hardwareDriveConn">
@@ -71,8 +269,23 @@
     </connection>
 
     <connection name="{{cookiecutter.component_instance_name}}Rg">
-        <source component="rateGroup10HzComp" port="RateGroupMemberOut" type="Sched" num="1"/>
+        <source component="rateGroup10HzComp" port="RateGroupMemberOut" type="Sched" num="0"/>
         <target component="{{cookiecutter.component_instance_name}}" port="schedIn" type="Sched" num="0"/>
+    </connection>
+
+    <connection name="uartDriverRg">
+        <source component="rateGroup10HzComp" port="RateGroupMemberOut" type="Sched" num="1"/>
+        <target component="uartDriver" port="reportTlm" type="Sched" num="0"/>
+    </connection>
+
+    <connection name="groundIfRg">
+        <source component="rateGroup10HzComp" port="RateGroupMemberOut" type="Sched" num="2"/>
+        <target component="groundIf" port="schedIn" type="Sched" num="0"/>
+    </connection>
+
+    <connection name="chanTelemRg">
+        <source component="rateGroup10HzComp" port="RateGroupMemberOut" type="Sched" num="3"/>
+        <target component="chanTlm" port="Run" type="Sched" num="0"/>
     </connection>
 
     <!-- 1Hz Rate Group -->
@@ -87,9 +300,45 @@
     <!-- Each port number pair must be unique -->
     <!-- This order must match the table in Topology.cpp -->
 
-
     <!-- Ground Interface Connections -->
 
+    <!-- Uplink Connections -->
+
+    <!-- Uplink connection to command dispatcher should not conflict with command sequencer -->
+    <connection name="cmdDispPkts">
+        <source component="groundIf" port="uplinkPort" type="Com" num="0"/>
+        <target component="cmdDisp" port="seqCmdBuff" type="Com" num="0"/>
+    </connection>
+
+<!--     <connection name="groundIfIfFileUplinkBufferGet">
+        <source component="groundIf" port="fileUplinkBufferGet" type="BufferGet" num="0"/>
+        <target component="fileUplinkBufferManager" port="bufferGetCallee" type="BufferGet" num="0"/>
+    </connection>
+    <connection name="fileUplinkBuffIn">
+        <source component="fileUplink" port="bufferSendOut" type="BufferSend" num="0"/>
+        <target component="fileUplinkBufferManager" port="bufferSendIn" type="BufferSend" num="0"/>
+    </connection>
+    <connection name="groundIfIfFileUplinkBufferSend">
+        <source component="groundIf" port="fileUplinkBufferSendOut" type="BufferSend" num="0"/>
+        <target component="fileUplink" port="bufferSendIn" type="BufferSend" num="0"/>
+    </connection> -->
+
+    <!-- Downlink Connections -->
+
+    <connection name="eventLoggerPkts">
+        <source component="eventLogger" port="PktSend" type="Com" num="0"/>
+        <target component="groundIf" port="downlinkPort" type="Com" num="0"/>
+    </connection>
+
+    <connection name="chanTlmPkts">
+        <source component="chanTlm" port="PktSend" type="Com" num="0"/>
+        <target component="groundIf" port="downlinkPort" type="Com" num="0"/>
+    </connection>
+
     <!-- Fault Connections -->
+    <!-- <connection name="eventLoggerFatalOut">
+        <source component="eventLogger" port="FatalAnnounce" type="FatalEvent" num="0"/>
+        <target component="fatalHandler" port="FatalReceive" type="FatalEvent" num="0"/>
+    </connection> -->
 
 </assembly>

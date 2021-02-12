@@ -14,9 +14,8 @@ set(SOURCE_FILES
 # Note: supply non-explicit dependencies here
 set(MOD_DEPS
     Fw/Logger
-    # Svc/GroundInterface
     Svc/LinuxTime
-    Os
+    # Os
     Os/Baremetal/TaskRunner
 )
 

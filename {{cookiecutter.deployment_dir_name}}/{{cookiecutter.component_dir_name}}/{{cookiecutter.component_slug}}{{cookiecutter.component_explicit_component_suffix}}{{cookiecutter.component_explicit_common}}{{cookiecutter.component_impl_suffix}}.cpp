@@ -23,7 +23,9 @@ namespace {{cookiecutter.component_namespace}} {
 #else
     {{cookiecutter.component_slug}}{{cookiecutter.component_explicit_component_suffix}}{{cookiecutter.component_impl_suffix}}(void) :
 #endif
-    m_state(false)
+    m_state(false){% if cookiecutter.deployment_parameter_support == "yes" %},
+    m_blinks(0),
+    m_blinkDecimateCntrl(0){% endif %}
   {}
 {% if cookiecutter.component_multiplatform_support != 'yes' %}
   void {{cookiecutter.component_slug}}{{cookiecutter.component_explicit_component_suffix}}{{cookiecutter.component_impl_suffix}} ::
@@ -56,8 +58,60 @@ namespace {{cookiecutter.component_namespace}} {
         NATIVE_UINT_TYPE context
     )
   {
-    blink();
-    m_state = !m_state;
+{%- if cookiecutter.deployment_parameter_support == "yes" %}
+    Fw::ParamValid valid;
+    m_blinkDecimateCntrl++;
+
+    if(m_blinkDecimateCntrl >= this->paramGet_blinkDecimate(valid))
+    {
+{%- endif %}
+      blink();
+      m_state = !m_state;
+      m_blinkDecimateCntrl = 0;
+
+      if(m_state)
+      {
+        m_blinks++;
+        tlmWrite_numBlinks(m_blinks);
+      }
+{%- if cookiecutter.deployment_parameter_support == "yes" %}
+    }
+{%- endif %}
   }
 
+  // ----------------------------------------------------------------------
+  // Command handler implementations
+  // ----------------------------------------------------------------------
+{% if cookiecutter.deployment_parameter_support == "yes" %}
+  void {{cookiecutter.component_slug}}{{cookiecutter.component_explicit_component_suffix}}{{cookiecutter.component_impl_suffix}} ::
+    downlinkParams_cmdHandler(
+        const FwOpcodeType opCode,
+        const U32 cmdSeq
+    )
+  {
+    Fw::ParamValid valid;
+    U8 val1 = this->paramGet_blinkDecimate(valid);
+    this->tlmWrite_blinkDecimate(val1);
+    this->cmdResponse_out(opCode,cmdSeq,Fw::COMMAND_OK);
+  }
+
+  void {{cookiecutter.component_slug}}{{cookiecutter.component_explicit_component_suffix}}{{cookiecutter.component_impl_suffix}} ::
+    parameterUpdated(
+        FwPrmIdType id
+    )
+  {
+    this->log_ACTIVITY_LO_{{cookiecutter.component_slug}}ParameterUpdated(id);
+    Fw::ParamValid valid;
+    switch(id) {
+      case PARAMID_BLINKDECIMATE: {
+        U8 val = this->paramGet_blinkDecimate(valid);
+        this->tlmWrite_blinkDecimate(val);
+        break;
+      }
+      default:
+        FW_ASSERT(0,id);
+        break;
+    }
+  }
+{% endif %}
 } // end namespace {{cookiecutter.component_namespace}}

@@ -1,12 +1,10 @@
+#include <Components.hpp>
+#include <{{cookiecutter.deployment_slug}}SchedContexts.hpp>
+#include <Fw/Logger/Logger.hpp>
 #include <Fw/Types/Assert.hpp>
-#include <Os/Task.hpp>
-#include <Os/Log.hpp>
-#include <Os/File.hpp>
 #include <Os/Baremetal/TaskRunner/TaskRunner.hpp>
-#include <Fw/Types/MallocAllocator.hpp>
-#include <Drv/ATmegaGpioDriver/ATmegaGpioDriverComponentImpl.hpp>
-#include "{{cookiecutter.deployment_slug}}SchedContexts.hpp"
-#include "Components.hpp"
+#include <Os/Log.hpp>
+#include <Os/Task.hpp>
 #ifdef ARDUINO
     #include <avr/io.h>
 #else
@@ -35,6 +33,16 @@ Svc::ActiveRateGroupImpl rateGroup10HzComp("RG10Hz",rg10HzContext,FW_NUM_ARRAY_E
 // Svc::ActiveRateGroupImpl rateGroup1HzComp("RG1Hz",rg1HzContext,FW_NUM_ARRAY_ELEMENTS(rg1HzContext));
 
 // Standard system components
+ATmega::AssertResetComponent assertResetter("assertResetter");
+Svc::CommandDispatcherImpl cmdDisp("cmdDisp");
+Svc::TlmChanImpl chanTlm("chanTlm");
+Svc::ActiveLoggerImpl eventLogger("eventLogger");
+{%- if cookiecutter.deployment_parameter_support == "yes" %}
+ATmega::EePrmDbComponentImpl eePrmDb("eePrmDb");
+{%- endif %}
+Svc::GroundInterfaceComponentImpl groundIf("groundIf");
+Drv::ATmegaSerialDriverComponentImpl uartDriver("uartDriver");
+Svc::LinuxTimeImpl linuxTime("linuxTime");
 
 // Arduino specific components
 {{cookiecutter.component_namespace}}::{{cookiecutter.component_slug}}{{cookiecutter.component_explicit_component_suffix}}{{cookiecutter.component_impl_suffix}} {{cookiecutter.component_instance_name}}("{{cookiecutter.component_instance_name}}");
@@ -43,6 +51,7 @@ Drv::ATmegaGpioDriverComponentImpl ledGpio("ledGpio");
 
 // Baremetal setup for the task runner
 Os::TaskRunner taskRunner;
+
 /**
  * Construct App:
  *
@@ -50,15 +59,28 @@ Os::TaskRunner taskRunner;
  * starts tasks. This is the initialization of the application, so new tasks and
  * memory can be acquired here, but should not be created at a later point.
  */
-void constructApp() {
-    // Initialize rate group driver
+void constructApp(void) {
+
+    // Initialize each component instance in memory
+    uartDriver.init(0);
+
     rateGroupDriverComp.init();
 
-    // Initialize the rate groups
     rateGroup10HzComp.init(10, 0);
     // rateGroup1HzComp.init(10, 1);
+{% if cookiecutter.deployment_parameter_support == "yes" %}
+    eePrmDb.init(0, 32, 1024);
+{% endif %}
+    eventLogger.init(4,0);
 
-    // Initialize the core data handling components
+    linuxTime.init(0);
+
+    cmdDisp.init(2,0);
+
+    chanTlm.init(4,0);
+
+    groundIf.init(0);
+
     {{cookiecutter.component_instance_name}}.init(0);
 
     ledGpio.init(0);
@@ -72,14 +94,30 @@ void constructApp() {
     // incorporates the assembly name.
     construct{{cookiecutter.deployment_slug}}Architecture();
 
+    /* Register commands */
+    eventLogger.regCommands();
+    cmdDisp.regCommands();
+{%- if cookiecutter.deployment_parameter_support == "yes" %}
+    eePrmDb.regCommands();
+{%- endif %}
+    {{cookiecutter.component_instance_name}}.regCommands();
+{% if cookiecutter.deployment_parameter_support == "yes" %}
+    // read parameters
+    {{cookiecutter.component_instance_name}}.loadParameters();
+{% endif %}
     // configure things
+    uartDriver.open(Drv::ATmegaSerialDriverComponentImpl::DEVICE::USART0,
+                    Drv::ATmegaSerialDriverComponentImpl::BAUD_RATE::BAUD_115K,
+                    Drv::ATmegaSerialDriverComponentImpl::PARITY::PARITY_NONE);
     ledGpio.setup(DDRB, PORTB, PB5, Drv::ATmegaGpioDriverComponentImpl::GPIO_OUT);
 
-    hardwareRateDriver.start();
-
     // Start all active components' tasks thus finishing the setup portion of this code
+    hardwareRateDriver.start();
     rateGroup10HzComp.start(0, 120, 10 * 1024);
     // rateGroup1HzComp.start(0, 119, 10 * 1024);
+    cmdDisp.start(0,101,10*1024);
+    eventLogger.start(0,98,10*1024);
+    chanTlm.start(0,97,10*1024);
 
     // Start the task for the rate group
 #ifndef ARDUINO
@@ -87,6 +125,7 @@ void constructApp() {
 #endif
     while(1){taskRunner.run();}
 }
+
 /**
  * Exit Tasks:
  *
@@ -97,4 +136,6 @@ void constructApp() {
 void exitTasks(void) {
     // rateGroup1HzComp.exit();
     rateGroup10HzComp.exit();
+    eventLogger.exit();
+    chanTlm.exit();
 }
