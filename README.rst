@@ -95,11 +95,17 @@ You will be asked for these fields:
             "example/path"
       - This is the path from the F Prime root to the current directory, not including the deployment's folder.  Do not add a ``/`` to the front or back of the path.
 
-    * - ``path_to_fprime_root``
+    * - ``deployment_path_to_fprime_root``
       - .. code:: python
 
             "../.."
       - This is the path from the current directory to the F Prime root, not including the deployment's folder.  Do not add a ``/`` to the front or back of the path.
+
+    * - ``deployment_parameter_support``
+      - .. code:: python
+
+            "yes"
+      - Include components and connections to support persistent parameter storage using the F Prime parameter subsystem.
 
     * - ``component_name``
       - .. code:: python
