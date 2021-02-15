@@ -15,7 +15,7 @@
     "component_explicit_component_suffix": ["Component", ""],
     "component_explicit_common": ["", "Common"],
     "component_impl_suffix": ["", "Impl"],
-    "component_path_to_fprime_root": "{{ cookiecutter.path_to_fprime_root }}/..",
+    "component_path_to_fprime_root": "{{ cookiecutter.deployment_path_to_fprime_root }}/..",
     "component_namespace": "{{ cookiecutter.deployment_path|replace('/','::')|replace('\\\\','::') }}",
     "component_kind": ["passive", "active"],
     "component_multiplatform_support": ["no", "yes"],

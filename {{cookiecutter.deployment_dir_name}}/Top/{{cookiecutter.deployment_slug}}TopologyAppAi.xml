@@ -45,7 +45,7 @@
     <!-- <instance namespace="Svc" name="rateGroup1HzComp" type="ActiveRateGroup" base_id="1001" base_id_window="20"/> -->
     <instance namespace="Svc" name="rateGroup10HzComp" type="ActiveRateGroup" base_id="1101" base_id_window="20"/>
 
-    <!-- Reference Example Components -->
+    <!-- {{cookiecutter.deployment_display_name}} Components -->
 
     <instance namespace="Drv" name="ledGpio" type="ATmegaGpioDriver" base_id="1201" base_id_window="20"/>
     <instance namespace="{{cookiecutter.component_namespace}}" name="{{cookiecutter.component_instance_name}}" type="{{cookiecutter.component_slug}}" base_id="1301" base_id_window="20"/>

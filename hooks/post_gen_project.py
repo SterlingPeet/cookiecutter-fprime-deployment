@@ -127,7 +127,7 @@ if __name__ == "__main__":
     next.  This can be done by adding a line like this, near the bottom
     of the deployment's CMakeLists.txt file:
 
-        add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../{{ cookiecutter.deployment_path }}/{{ cookiecutter.component_dir_name }}")
+        add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/{{ cookiecutter.deployment_path_to_fprime_root }}/{{ cookiecutter.deployment_path }}/{{ cookiecutter.component_dir_name }}")
 
     Then you need to (possibly purge) and generate the new cmake config
     in the deployment:
