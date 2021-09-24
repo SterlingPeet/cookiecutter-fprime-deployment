@@ -4,10 +4,18 @@
     "deployment_display_name": "My Example",
     "dep_short_description": "Example deployment for F Prime FSW framework.",
     "deployment_slug": "{{ cookiecutter.deployment_display_name|slugify(separator='', lowercase=False) }}",
-    "deployment_dir_name": "{{ cookiecutter.deployment_slug }}",
-    "deployment_path": "example/path",
-    "deployment_path_to_fprime_root": "../..",
+    "deployment_path": ".",
+    "deployment_path_to_project_root": "..",
+    "deployment_path_to_fprime_framework": "{{ cookiecutter.deployment_path_to_project_root }}/fprime",
+    "deployment_target_platform_support": ["Native", "Linux", "Darwin", "Arduino"],
+    "deployment_baremetal_scheduler": ["{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}yes{% else %}no{% endif %}", "{% if cookiecutter.deployment_target_platform_support != 'Arduino' %}yes{% else %}no{% endif %}"],
+    "deployment_rg_sched_contexts_hpp": ["no", "yes"],
     "deployment_parameter_support": ["yes", "no"],
+    "deployment_command_sequence_support": ["{% if cookiecutter.deployment_target_platform_support != 'Arduino' %}yes{% else %}no{% endif %}", "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}yes{% else %}no{% endif %}"],
+    "deployment_event_text_log_support": ["{% if cookiecutter.deployment_target_platform_support != 'Arduino' %}yes{% else %}no{% endif %}", "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}yes{% else %}no{% endif %}"],
+    "deployment_file_xfer_support": ["{% if cookiecutter.deployment_target_platform_support != 'Arduino' %}yes{% else %}no{% endif %}", "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}yes{% else %}no{% endif %}"],
+    "deployment_health_support": ["{% if cookiecutter.deployment_target_platform_support != 'Arduino' %}yes{% else %}no{% endif %}", "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}yes{% else %}no{% endif %}"],
+    "deployment_ref_doc_boilerplate": ["no", "yes"],
     "component_name": "Led Blinker",
     "component_short_description": "Example component to support {{  cookiecutter.deployment_display_name  }} deployment.",
     "component_slug": "{{ cookiecutter.component_name|slugify(separator='', lowercase=False) }}",
@@ -15,14 +23,829 @@
     "component_explicit_component_suffix": ["Component", ""],
     "component_explicit_common": ["", "Common"],
     "component_impl_suffix": ["", "Impl"],
-    "component_path_to_fprime_root": "{{ cookiecutter.deployment_path_to_fprime_root }}/..",
-    "component_namespace": "{{ cookiecutter.deployment_path|replace('/','::')|replace('\\\\','::') }}",
+    "component_path_to_fprime_root": "../{{ cookiecutter.deployment_path_to_project_root }}",
+    "component_namespace": "{{ cookiecutter.deployment_slug }}",
     "component_kind": ["passive", "active"],
     "component_multiplatform_support": ["no", "yes"],
-    "component_instance_name": "{{ cookiecutter.component_slug|lower }}",
+    "component_instance_name": "{{ cookiecutter.component_slug[0]|lower }}{{ cookiecutter.component_slug[1:] }}",
     "startup_delay_msec": ["2000", "1000", "500", "0"],
     "startup_arduino_led_flash": ["yes", "no"],
     "arduino_log_stream": ["Serial", "Serial1", "Serial2", "Serial3"],
-    "license": ["None", "MIT license", "BSD 2-Clause License", "BSD 3-Clause License"]
+    "license": ["None", "Apache 2.0 license", "MIT license", "BSD 2-Clause License", "BSD 3-Clause License"],
+    "internal_use": {
+        "dep_path": "{% if (cookiecutter.deployment_path == '.') or (cookiecutter.deployment_path == '') %}''{% else %}{{ cookiecutter.deployment_path }}{% endif %}",
+        "base_id": {
+            "init": 1,
+            "interval": 40
+        },
+        "thread_stack_size": "10*1024",
+        "prm_comp": "{% if cookiecutter.deployment_target_platform_support == 'Arduino' -%}eePrmDb{% else %}prmDb{% endif %}",
+        "components": [
+            {
+                "instance": "assertResetter",
+                "namespace": "ATmega",
+                "type": "AssertReset",
+                "class": "AssertResetComponent",
+                "kind": "passive",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "no"
+                },
+                "tlm": "no",
+                "events": "no",
+                "textevents": "no",
+                "time": "no",
+                "health": {
+                    "connect": "no"
+                },
+                "args": {
+                    "instance": "",
+                    "init": ""
+                },
+                "ai_def": "ATmega/Svc/AssertReset/AssertResetComponentAi.xml",
+                "hpp": "ATmega/Svc/AssertReset/AssertResetComponent.hpp",
+                "group": "cdh",
+                "use": "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}yes{% else %}no{% endif %}"
+            },
+            {
+                "instance": "fatalHandler",
+                "namespace": "Svc",
+                "type": "FatalHandler",
+                "class": "FatalHandlerComponentImpl",
+                "kind": "passive",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "no"
+                },
+                "tlm": "no",
+                "events": "no",
+                "textevents": "no",
+                "time": "no",
+                "health": {
+                    "connect": "no"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "0"
+                },
+                "ai_def": "Svc/FatalHandler/FatalHandlerComponentAi.xml",
+                "hpp": "Svc/FatalHandler/FatalHandlerComponentImpl.hpp",
+                "group": "cdh",
+                "use": "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}no{% else %}yes{% endif %}"
+            },
+            {
+                "instance": "fatalAdapter",
+                "namespace": "Svc",
+                "type": "AssertFatalAdapter",
+                "class": "AssertFatalAdapterComponentImpl",
+                "kind": "passive",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "no"
+                },
+                "tlm": "no",
+                "events": "Log",
+                "textevents": "LogText",
+                "time": "Time",
+                "health": {
+                    "connect": "no"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "0"
+                },
+                "ai_def": "Svc/AssertFatalAdapter/AssertFatalAdapterComponentAi.xml",
+                "hpp": "Svc/AssertFatalAdapter/AssertFatalAdapterComponentImpl.hpp",
+                "group": "cdh",
+                "use": "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}no{% else %}yes{% endif %}"
+            },
+            {
+                "instance": "blockDrv",
+                "namespace": "Drv",
+                "type": "BlockDriver",
+                "class": "BlockDriverImpl",
+                "kind": "active",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "no"
+                },
+                "tlm": "Tlm",
+                "events": "no",
+                "textevents": "no",
+                "time": "Time",
+                "health": {
+                    "connect": "yes",
+                    "in": "PingIn",
+                    "out": "PingOut"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "10"
+                },
+                "ai_def": "Drv/BlockDriver/BlockDriverComponentAi.xml",
+                "hpp": "Drv/BlockDriver/BlockDriverImpl.hpp",
+                "group": "dep",
+                "use": "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}no{% else %}yes{% endif %}"
+            },
+            {
+                "instance": "hardwareRateDriver",
+                "namespace": "Arduino",
+                "type": "HardwareRateDriver",
+                "class": "HardwareRateDriver",
+                "kind": "passive",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "no"
+                },
+                "tlm": "no",
+                "events": "no",
+                "textevents": "no",
+                "time": "no",
+                "health": {
+                    "connect": "no"
+                },
+                "args": {
+                    "instance": ", 100",
+                    "init": "0"
+                },
+                "ai_def": "ATmega/Drv/HardwareRateDriver/HardwareRateDriverComponentAi.xml",
+                "hpp": "ATmega/Drv/HardwareRateDriver/HardwareRateDriver.hpp",
+                "group": "dep",
+                "use": "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}yes{% else %}no{% endif %}"
+            },
+            {
+                "instance": "rateGroupDriverComp",
+                "namespace": "Svc",
+                "type": "RateGroupDriver",
+                "class": "RateGroupDriverImpl",
+                "kind": "passive",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "no"
+                },
+                "tlm": "no",
+                "events": "no",
+                "textevents": "no",
+                "time": "no",
+                "health": {
+                    "connect": "no"
+                },
+                "args": {
+                    "instance": ",rgDivs,FW_NUM_ARRAY_ELEMENTS(rgDivs)",
+                    "init": ""
+                },
+                "ai_def": "Svc/RateGroupDriver/RateGroupDriverComponentAi.xml",
+                "hpp": "Svc/RateGroupDriver/RateGroupDriverImpl.hpp",
+                "group": "rg",
+                "use": "yes"
+            },
+            {
+                "instance": "rateGroup1Comp",
+                "namespace": "Svc",
+                "type": "ActiveRateGroup",
+                "class": "ActiveRateGroupImpl",
+                "kind": "active",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "no"
+                },
+                "tlm": "Tlm",
+                "events": "Log",
+                "textevents": "LogText",
+                "time": "Time",
+                "health": {
+                    "connect": "yes",
+                    "in": "PingIn",
+                    "out": "PingOut"
+                },
+                "args": {
+                    "instance": ",rg1Context,FW_NUM_ARRAY_ELEMENTS(rg1Context)",
+                    "init": "10, 0"
+                },
+                "ai_def": "Svc/ActiveRateGroup/ActiveRateGroupComponentAi.xml",
+                "hpp": "Svc/ActiveRateGroup/ActiveRateGroupImpl.hpp",
+                "group": "rg",
+                "use": "yes"
+            },
+            {
+                "instance": "cmdDisp",
+                "namespace": "Svc",
+                "type": "CommandDispatcher",
+                "class": "CommandDispatcherImpl",
+                "kind": "active",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "yes",
+                    "reg": "CmdReg",
+                    "disp": "CmdDisp",
+                    "reply": "CmdStatus"
+                },
+                "tlm": "Tlm",
+                "events": "Log",
+                "textevents": "LogText",
+                "time": "Time",
+                "health": {
+                    "connect": "yes",
+                    "in": "pingIn",
+                    "out": "pingOut"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}2{% else %}20{% endif %}, 0"
+                },
+                "ai_def": "Svc/CmdDispatcher/CommandDispatcherComponentAi.xml",
+                "hpp": "Svc/CmdDispatcher/CommandDispatcherImpl.hpp",
+                "group": "cdh",
+                "use": "yes"
+            },
+            {
+                "instance": "cmdSeq",
+                "namespace": "Svc",
+                "type": "CmdSequencer",
+                "class": "CmdSequencerComponentImpl",
+                "kind": "active",
+                "base_id_window": "23",
+                "cmds": {
+                    "connect": "yes",
+                    "reg": "cmdRegOut",
+                    "disp": "cmdIn",
+                    "reply": "cmdResponseOut"
+                },
+                "tlm": "tlmOut",
+                "events": "logOut",
+                "textevents": "LogText",
+                "time": "timeCaller",
+                "health": {
+                    "connect": "yes",
+                    "in": "pingIn",
+                    "out": "pingOut"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "10, 0);\n    cmdSeq.allocateBuffer(0, mallocator, 5*1024"
+                },
+                "ai_def": "Svc/CmdSequencer/CmdSequencerComponentAi.xml",
+                "hpp": "Svc/CmdSequencer/CmdSequencerImpl.hpp",
+                "group": "cdh",
+                "use": "{% if cookiecutter.deployment_command_sequence_support == 'yes' %}yes{% else %}no{% endif %}"
+            },
+            {
+                "instance": "chanTlm",
+                "namespace": "Svc",
+                "type": "TlmChan",
+                "class": "TlmChanImpl",
+                "kind": "active",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "no"
+                },
+                "tlm": "no",
+                "events": "no",
+                "textevents": "no",
+                "time": "no",
+                "health": {
+                    "connect": "yes",
+                    "in": "pingIn",
+                    "out": "pingOut"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}4{% else %}10{% endif %}, 0"
+                },
+                "ai_def": "Svc/TlmChan/TlmChanComponentAi.xml",
+                "hpp": "Svc/TlmChan/TlmChanImpl.hpp",
+                "group": "cdh",
+                "use": "yes"
+            },
+            {
+                "instance": "eventLogger",
+                "namespace": "Svc",
+                "type": "ActiveLogger",
+                "class": "ActiveLoggerImpl",
+                "kind": "active",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "yes",
+                    "reg": "CmdReg",
+                    "disp": "CmdDisp",
+                    "reply": "CmdStatus"
+                },
+                "tlm": "no",
+                "events": "Log",
+                "textevents": "no",
+                "time": "Time",
+                "health": {
+                    "connect": "yes",
+                    "in": "pingIn",
+                    "out": "pingOut"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}4{% else %}10{% endif %}, 0"
+                },
+                "ai_def": "Svc/ActiveLogger/ActiveLoggerComponentAi.xml",
+                "hpp": "Svc/ActiveLogger/ActiveLoggerImpl.hpp",
+                "group": "cdh",
+                "use": "yes"
+            },
+            {
+                "instance": "textLogger",
+                "namespace": "Svc",
+                "type": "PassiveTextLogger",
+                "class": "ConsoleTextLoggerImpl",
+                "kind": "passive",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "no"
+                },
+                "tlm": "no",
+                "events": "no",
+                "textevents": "no",
+                "time": "no",
+                "health": {
+                    "connect": "no"
+                },
+                "args": {
+                    "instance": "",
+                    "init": ""
+                },
+                "ai_def": "Svc/PassiveConsoleTextLogger/PassiveTextLoggerComponentAi.xml",
+                "hpp": "Svc/PassiveConsoleTextLogger/ConsoleTextLoggerImpl.hpp",
+                "group": "cdh",
+                "use": "{% if cookiecutter.deployment_event_text_log_support == 'yes' %}yes{% else %}no{% endif %}"
+            },
+            {
+                "instance": "eePrmDb",
+                "namespace": "ATmega",
+                "type": "EePrmDb",
+                "class": "EePrmDbComponentImpl",
+                "kind": "passive",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "yes",
+                    "reg": "CmdReg",
+                    "disp": "CmdDisp",
+                    "reply": "CmdStatus"
+                },
+                "tlm": "no",
+                "events": "Log",
+                "textevents": "LogText",
+                "time": "Time",
+                "health": {
+                    "connect": "no",
+                    "in": "pingIn",
+                    "out": "pingOut"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "0, 32, 1024"
+                },
+                "ai_def": "ATmega/Svc/EePrmDb/EePrmDbComponentAi.xml",
+                "hpp": "ATmega/Svc/EePrmDb/EePrmDbComponentImpl.hpp",
+                "group": "cdh",
+                "use": "{% if cookiecutter.deployment_parameter_support == 'yes' %}{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}yes{% else %}no{% endif %}{% else %}no{% endif %}"
+            },
+            {
+                "instance": "prmDb",
+                "namespace": "Svc",
+                "type": "PrmDb",
+                "class": "PrmDbImpl",
+                "kind": "active",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "yes",
+                    "reg": "CmdReg",
+                    "disp": "CmdDisp",
+                    "reply": "CmdStatus"
+                },
+                "tlm": "no",
+                "events": "Log",
+                "textevents": "LogText",
+                "time": "Time",
+                "health": {
+                    "connect": "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}no{% else %}yes{% endif %}",
+                    "in": "pingIn",
+                    "out": "pingOut"
+                },
+                "args": {
+                    "instance": ",\"PrmDb.dat\"",
+                    "init": "10, 0"
+                },
+                "ai_def": "Svc/PrmDb/PrmDbComponentAi.xml",
+                "hpp": "Svc/PrmDb/PrmDbImpl.hpp",
+                "group": "cdh",
+                "use": "{% if cookiecutter.deployment_parameter_support == 'no' %}no{% else %}{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}no{% else %}yes{% endif %}{% endif %}"
+            },
+            {
+                "instance": "arduinoTime",
+                "namespace": "Svc",
+                "type": "Time",
+                "class": "LinuxTimeImpl",
+                "kind": "passive",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "no"
+                },
+                "tlm": "no",
+                "events": "no",
+                "textevents": "no",
+                "time": "no",
+                "health": {
+                    "connect": "no"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "0"
+                },
+                "ai_def": "Svc/Time/TimeComponentAi.xml",
+                "hpp": "ATmega/Svc/ATmegaTime/ArduinoTimeImpl.hpp",
+                "group": "cdh",
+                "use": "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}yes{% else %}no{% endif %}"
+            },
+            {
+                "instance": "linuxTime",
+                "namespace": "Svc",
+                "type": "Time",
+                "class": "LinuxTimeImpl",
+                "kind": "passive",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "no"
+                },
+                "tlm": "no",
+                "events": "no",
+                "textevents": "no",
+                "time": "no",
+                "health": {
+                    "connect": "no"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "0"
+                },
+                "ai_def": "Svc/Time/TimeComponentAi.xml",
+                "hpp": "Svc/LinuxTime/LinuxTimeImpl.hpp",
+                "group": "cdh",
+                "use": "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}no{% else %}yes{% endif %}"
+            },
+            {
+                "instance": "fileUplink",
+                "namespace": "Svc",
+                "type": "FileUplink",
+                "class": "FileUplink",
+                "kind": "active",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "no"
+                },
+                "tlm": "tlmOut",
+                "events": "eventOut",
+                "textevents": "LogText",
+                "time": "timeCaller",
+                "health": {
+                    "connect": "yes",
+                    "in": "pingIn",
+                    "out": "pingOut"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "30, 0"
+                },
+                "ai_def": "Svc/FileUplink/FileUplinkComponentAi.xml",
+                "hpp": "Svc/FileUplink/FileUplink.hpp",
+                "group": "cdh",
+                "use": "{% if cookiecutter.deployment_file_xfer_support == 'yes' %}yes{% else %}no{% endif %}"
+            },
+            {
+                "instance": "fileUplinkBufferManager",
+                "namespace": "Svc",
+                "type": "BufferManager",
+                "class": "BufferManagerComponentImpl",
+                "kind": "passive",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "no"
+                },
+                "tlm": "tlmOut",
+                "events": "eventOut",
+                "textevents": "textEventOut",
+                "time": "timeCaller",
+                "health": {
+                    "connect": "no"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "0"
+                },
+                "ai_def": "Svc/BufferManager/BufferManagerComponentAi.xml",
+                "hpp": "Svc/BufferManager/BufferManagerComponentImpl.hpp",
+                "group": "cdh",
+                "use": "{% if cookiecutter.deployment_file_xfer_support == 'yes' %}yes{% else %}no{% endif %}"
+            },
+            {
+                "instance": "fileDownlink",
+                "namespace": "Svc",
+                "type": "FileDownlink",
+                "class": "FileDownlink",
+                "kind": "active",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "yes",
+                    "reg": "cmdRegOut",
+                    "disp": "cmdIn",
+                    "reply": "cmdResponseOut"
+                },
+                "tlm": "tlmOut",
+                "events": "eventOut",
+                "textevents": "textEventOut",
+                "time": "timeCaller",
+                "health": {
+                    "connect": "yes",
+                    "in": "pingIn",
+                    "out": "pingOut"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "30, 0);\n    fileDownlink.configure(1000, 1000, 1000, 10"
+                },
+                "ai_def": "Svc/FileDownlink/FileDownlinkComponentAi.xml",
+                "hpp": "Svc/FileDownlink/FileDownlink.hpp",
+                "group": "cdh",
+                "use": "{% if cookiecutter.deployment_file_xfer_support == 'yes' %}yes{% else %}no{% endif %}"
+            },
+            {
+                "instance": "fileManager",
+                "namespace": "Svc",
+                "type": "FileManager",
+                "class": "FileManager",
+                "kind": "active",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "yes",
+                    "reg": "cmdRegOut",
+                    "disp": "cmdIn",
+                    "reply": "cmdResponseOut"
+                },
+                "tlm": "tlmOut",
+                "events": "eventOut",
+                "textevents": "LogText",
+                "time": "timeCaller",
+                "health": {
+                    "connect": "yes",
+                    "in": "pingIn",
+                    "out": "pingOut"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "30, 0"
+                },
+                "ai_def": "Svc/FileManager/FileManagerComponentAi.xml",
+                "hpp": "Svc/FileManager/FileManager.hpp",
+                "group": "cdh",
+                "use": "{% if cookiecutter.deployment_file_xfer_support == 'yes' %}yes{% else %}no{% endif %}"
+            },
+            {
+                "instance": "staticMemory",
+                "namespace": "Svc",
+                "type": "StaticMemory",
+                "class": "StaticMemoryComponentImpl",
+                "kind": "passive",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "no"
+                },
+                "tlm": "no",
+                "events": "no",
+                "textevents": "no",
+                "time": "no",
+                "health": {
+                    "connect": "no"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "0"
+                },
+                "ai_def": "Svc/StaticMemory/StaticMemoryComponentAi.xml",
+                "hpp": "Svc/StaticMemory/StaticMemoryComponentImpl.hpp",
+                "group": "cdh",
+                "use": "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}no{% else %}yes{% endif %}"
+            },
+            {
+                "instance": "health",
+                "namespace": "Svc",
+                "type": "Health",
+                "class": "HealthImpl",
+                "kind": "queued",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "yes",
+                    "reg": "CmdReg",
+                    "disp": "CmdDisp",
+                    "reply": "CmdStatus"
+                },
+                "tlm": "Tlm",
+                "events": "Log",
+                "textevents": "LogText",
+                "time": "Time",
+                "health": {
+                    "connect": "no"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "25, 0"
+                },
+                "ai_def": "Svc/Health/HealthComponentAi.xml",
+                "hpp": "Svc/Health/HealthComponentImpl.hpp",
+                "group": "cdh",
+                "use": "{% if cookiecutter.deployment_health_support == 'yes' %}yes{% else %}no{% endif %}"
+            },
+            {
+                "instance": "comm",
+                "namespace": "Drv",
+                "type": "ByteStreamDriverModel",
+                "class": "TcpClientComponentImpl",
+                "kind": "passive",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "no"
+                },
+                "tlm": "no",
+                "events": "no",
+                "textevents": "no",
+                "time": "no",
+                "health": {
+                    "connect": "no"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "0"
+                },
+                "ai_def": "Drv/ByteStreamDriverModel/ByteStreamDriverComponentAi.xml",
+                "hpp": "Drv/TcpClient/TcpClientComponentImpl.hpp",
+                "group": "com",
+                "use": "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}no{% else %}yes{% endif %}"
+            },
+            {
+                "instance": "uartDriver",
+                "namespace": "Drv",
+                "type": "ATmegaSerialDriver",
+                "class": "ATmegaSerialDriverComponentImpl",
+                "kind": "passive",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "no"
+                },
+                "tlm": "Tlm",
+                "events": "no",
+                "textevents": "no",
+                "time": "no",
+                "health": {
+                    "connect": "no"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "0"
+                },
+                "ai_def": "ATmega/Drv/ATmegaSerialDriver/ATmegaSerialDriverComponentAi.xml",
+                "hpp": "ATmega/Drv/ATmegaSerialDriver/ATmegaSerialDriverComponentImpl.hpp",
+                "group": "com",
+                "use": "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}yes{% else %}no{% endif %}"
+            },
+            {
+                "instance": "downlink",
+                "namespace": "Svc",
+                "type": "Framer",
+                "class": "FramerComponentImpl",
+                "kind": "passive",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "no"
+                },
+                "tlm": "no",
+                "events": "no",
+                "textevents": "no",
+                "time": "no",
+                "health": {
+                    "connect": "no"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "0);\n    downlink.setup(framing"
+                },
+                "ai_def": "Svc/Framer/FramerComponentAi.xml",
+                "hpp": "Svc/Framer/FramerComponentImpl.hpp",
+                "group": "cdh",
+                "use": "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}no{% else %}yes{% endif %}"
+            },
+            {
+                "instance": "uplink",
+                "namespace": "Svc",
+                "type": "Deframer",
+                "class": "DeframerComponentImpl",
+                "kind": "passive",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "no"
+                },
+                "tlm": "no",
+                "events": "no",
+                "textevents": "no",
+                "time": "no",
+                "health": {
+                    "connect": "no"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "0);\n    uplink.setup(deframing"
+                },
+                "ai_def": "Svc/Deframer/DeframerComponentAi.xml",
+                "hpp": "Svc/Deframer/DeframerComponentImpl.hpp",
+                "group": "cdh",
+                "use": "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}no{% else %}yes{% endif %}"
+            },
+            {
+                "instance": "groundInterface",
+                "namespace": "Svc",
+                "type": "GroundInterface",
+                "class": "GroundInterfaceComponentImpl",
+                "kind": "passive",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "no"
+                },
+                "tlm": "no",
+                "events": "Log",
+                "textevents": "LogText",
+                "time": "Time",
+                "health": {
+                    "connect": "no"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "0"
+                },
+                "ai_def": "Svc/GroundInterface/GroundInterfaceComponentAi.xml",
+                "hpp": "Svc/GroundInterface/GroundInterface.hpp",
+                "group": "cdh",
+                "use": "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}yes{% else %}no{% endif %}"
+            },
+            {
+                "instance": "ledGpio",
+                "namespace": "Drv",
+                "type": "ATmegaGpioDriver",
+                "class": "ATmegaGpioDriverComponentImpl",
+                "kind": "passive",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "no"
+                },
+                "tlm": "no",
+                "events": "no",
+                "textevents": "no",
+                "time": "no",
+                "health": {
+                    "connect": "no"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "0"
+                },
+                "ai_def": "ATmega/Drv/ATmegaGpioDriver/ATmegaGpioDriverComponentAi.xml",
+                "hpp": "ATmega/Drv/ATmegaGpioDriver/ATmegaGpioDriverComponentImpl.hpp",
+                "group": "dep",
+                "use": "{% if cookiecutter.deployment_target_platform_support == 'Arduino' %}yes{% else %}no{% endif %}"
+            },
+            {
+                "instance": "{{ cookiecutter.component_instance_name }}",
+                "namespace": "{{ cookiecutter.component_namespace }}",
+                "type": "{{cookiecutter.component_slug}}",
+                "class": "{{ cookiecutter.component_slug }}{{ cookiecutter.component_explicit_component_suffix }}{{ cookiecutter.component_impl_suffix }}",
+                "kind": "{{ cookiecutter.component_kind }}",
+                "base_id_window": "20",
+                "cmds": {
+                    "connect": "{% if cookiecutter.deployment_parameter_support == 'yes' %}yes{% else %}no{% endif %}",
+                    "reg": "CmdReg",
+                    "disp": "CmdDisp",
+                    "reply": "CmdStatus"
+                },
+                "tlm": "Tlm",
+                "events": "{% if cookiecutter.deployment_parameter_support == 'yes' %}Log{% else %}no{% endif %}",
+                "textevents": "{% if cookiecutter.deployment_parameter_support == 'yes' %}LogText{% else %}no{% endif %}",
+                "time": "Time",
+                "health": {
+                    "connect": "{% if cookiecutter.component_kind == 'active' %}yes{% else %}no{% endif %}",
+                    "in": "pingIn",
+                    "out": "pingOut"
+                },
+                "args": {
+                    "instance": "",
+                    "init": "0"
+                },
+                "ai_def": "{% if (cookiecutter.deployment_path == '.') or (cookiecutter.deployment_path == '') %}{% else %}{{ [cookiecutter.deployment_path, '/']|join() }}{% endif %}{{cookiecutter.deployment_slug}}/{{cookiecutter.component_dir_name}}/{{cookiecutter.component_slug}}ComponentAi.xml",
+                "hpp": "{{ cookiecutter.deployment_slug }}/{{ cookiecutter.component_dir_name }}/{{ cookiecutter.component_slug }}{{ cookiecutter.component_explicit_component_suffix }}{{ cookiecutter.component_impl_suffix }}.hpp",
+                "group": "dep",
+                "use": "yes"
+            }
+        ]
+    }
 }
-

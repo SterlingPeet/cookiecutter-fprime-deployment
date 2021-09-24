@@ -38,7 +38,9 @@ if __name__ == "__main__":
     # Set some dates
     today = datetime.date.today()
     replace_contents(join('{{ cookiecutter.component_dir_name }}', 'docs', 'sdd.md'), '<TODAY>', today.strftime("%m/%d/%Y"))
+    replace_contents(join('docs', 'sdd.md'), '<TODAY>', today.strftime("%m/%d/%Y"))
     replace_contents('README.md', '<TODAY>', today.strftime("%m/%d/%Y"))
+    replace_contents('LICENSE', '<YEAR>', today.strftime('%Y'))
 
     # Delete multi-platform component files, if not desired
 {% if cookiecutter.component_multiplatform_support == "no" %}
@@ -46,6 +48,20 @@ if __name__ == "__main__":
     rm_list = ['Arduino', 'AVR', 'Linux']
     for i in rm_list:
         os.unlink(mp_str.format(i))
+{% endif %}
+
+    # Delete rate group schedule contexts file if not in use
+{% if cookiecutter.deployment_rg_sched_contexts_hpp == "no" %}
+    os.unlink('Top/{{cookiecutter.deployment_slug}}SchedContexts.hpp')
+{% endif %}
+
+    # Delete parameter database file if not in use
+{% if (cookiecutter.deployment_parameter_support == "no") or (cookiecutter.deployment_target_platform_support == "Arduino") %}
+    os.unlink('PrmDb.dat')
+{% endif %}
+
+{%- if cookiecutter.license == "None" %}
+    os.unlink('LICENSE')
 {% endif %}
 
     # Populate Components.hpp
@@ -71,8 +87,16 @@ if __name__ == "__main__":
             # This is a hack because Time components don't follow the modern pattern
             if 'TimeComponent' in str(include_path):
                 include_path = Path('Svc/LinuxTime/LinuxTimeImpl.hpp')
-            folder = Path('..' + os.sep + '{{cookiecutter.deployment_path_to_fprime_root}}' + os.sep + str(include_path.parent))
-            hpps = glob(str(folder) + os.sep + '*.hpp')
+            # This is a hack because ByteStreamDrivers are abstracted and don't get
+            # defined directly in the Toplogy xml file any more
+            if 'ByteStreamDriverModel' in str(include_path):
+                include_path = Path('Drv/TcpClient/TcpClientComponentImpl.hpp')
+            # Future Self: might need to include libraries in the search path too
+            folder = Path('{{cookiecutter.deployment_path_to_fprime_framework}}' + os.sep + str(include_path.parent))
+            Fw_hpps = glob(str(folder) + os.sep + '*.hpp')
+            folder = Path('{{cookiecutter.deployment_path_to_project_root}}' + os.sep + str(include_path.parent))
+            Prj_hpps = glob(str(folder) + os.sep + '*.hpp')
+            hpps = Fw_hpps + Prj_hpps
             for hpp in hpps:
                 if hpp[-7:] != 'Cfg.hpp':
                     long_hpp = Path(hpp)
@@ -84,6 +108,14 @@ if __name__ == "__main__":
         comp_include_declarations = '\n'.join(comp_incl_list)
         for comp in comp_list:
             class_name = get_class_name(comp.get('type'), comp_incl_paths)
+            # This is a hack because ByteStreamDrivers are abstracted and don't get
+            # defined directly in the Toplogy xml file any more
+            if class_name == 'ByteStreamDriverModel':
+                class_name = 'TcpClientComponentImpl'
+            if class_name == 'PassiveTextLogger':
+                class_name = 'ConsoleTextLoggerImpl'
+            if comp.get('type') == 'Time':
+                class_name = 'LinuxTimeImpl'
             comp_inst_list.append('extern {}::{} {};'.format(
                 comp.get('namespace'),
                 class_name,
@@ -116,7 +148,9 @@ if __name__ == "__main__":
 
     You've used these cookiecutter parameters:
 {% for key, value in cookiecutter.items()|sort %}
+    {%- if key != "internal_use" %}
         {{ "{0:26}".format(key + ":") }} {{ "{0!r}".format(value).strip("u") }}
+    {%- endif %}
 {%- endfor %}
 
 ################################################################################
@@ -127,7 +161,7 @@ if __name__ == "__main__":
     next.  This can be done by adding a line like this, near the bottom
     of the deployment's CMakeLists.txt file:
 
-        add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/{{ cookiecutter.deployment_path_to_fprime_root }}/{{ cookiecutter.deployment_path }}/{{ cookiecutter.component_dir_name }}")
+        add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/{{ cookiecutter.deployment_path_to_project_root }}/{{ cookiecutter.deployment_path }}/{{ cookiecutter.component_dir_name }}")
 
     Then you need to (possibly purge) and generate the new cmake config
     in the deployment:

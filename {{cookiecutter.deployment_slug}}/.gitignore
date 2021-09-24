@@ -1,0 +1,12 @@
+# Evironment files are local, meant for overriding the
+# project settings and not for general purpose use
+environment.ini
+
+# The internal use dictionary is available for debugging
+# but is not needed for any part of normal usage nor for
+# regenerating the deployment with an updated template.
+.internal_use
+
+# ignore backup files
+*.bak
+*.log

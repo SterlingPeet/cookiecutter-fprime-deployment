@@ -1,0 +1,378 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<?xml-model href="../{{cookiecutter.deployment_path_to_fprime_framework}}/Autocoders/Python/schema/default/topology_schema.rng" type="application/xml" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<assembly name="{{cookiecutter.deployment_slug}}">
+
+    <!-- Import component declarations -->
+{% set import_paths = [] -%}{#- variable to store list of import paths -#}
+{%- for component in cookiecutter.internal_use.components %}
+    {%- if component.use == 'yes' -%}
+        {%- set __ = import_paths.append(component.ai_def) -%}
+    {%- endif -%}
+{%- endfor %}
+{%- for path in import_paths|sort %}
+    <import_component_type>{{ path }}</import_component_type>
+{%- endfor %}
+
+    <!-- Declare component instances - must match names in Components.hpp -->
+
+    <!-- Core C&DH Components -->
+{% set base_id = { 'value': cookiecutter.internal_use.base_id.init } -%}
+{%- for component in cookiecutter.internal_use.components %}
+    {%- if (component.use == 'yes') and (component.group == 'cdh') %}
+    <instance namespace="{{ component.namespace }}" name="{{ component.instance }}" type="{{ component.type }}" base_id="{{ base_id.value }}" base_id_window="{{ component.base_id_window }}"/>
+        {%- set __ = base_id.update({'value': base_id.value|int + cookiecutter.internal_use.base_id.interval|int }) -%}
+    {%- endif -%}
+{%- endfor %}
+
+    <!-- Communications driver. May be swapped with other comm drivers like UART -->
+{%- if cookiecutter.deployment_target_platform_support != "Arduino" %}
+    <!-- Note: here we have tcp reliable uplink, and Udp (low latency) downlink -->
+{%- endif %}
+{% for component in cookiecutter.internal_use.components %}
+    {%- if (component.use == 'yes') and (component.group == 'com') %}
+    <instance namespace="{{ component.namespace }}" name="{{ component.instance }}" type="{{ component.type }}" base_id="{{ base_id.value }}" base_id_window="{{ component.base_id_window }}"/>
+        {%- set __ = base_id.update({'value': base_id.value|int + cookiecutter.internal_use.base_id.interval|int }) -%}
+    {%- endif -%}
+{%- endfor %}
+
+    <!-- Rate Group Components -->
+{% for component in cookiecutter.internal_use.components %}
+    {%- if (component.use == 'yes') and (component.group == 'rg') %}
+    <instance namespace="{{ component.namespace }}" name="{{ component.instance }}" type="{{ component.type }}" base_id="{{ base_id.value }}" base_id_window="{{ component.base_id_window }}"/>
+        {%- set __ = base_id.update({'value': base_id.value|int + cookiecutter.internal_use.base_id.interval|int }) -%}
+    {%- endif -%}
+{%- endfor %}
+
+    <!-- {{cookiecutter.deployment_display_name}} Components -->
+{% for component in cookiecutter.internal_use.components %}
+    {%- if (component.use == 'yes') and (component.group == 'dep') %}
+    <instance namespace="{{ component.namespace }}" name="{{ component.instance }}" type="{{ component.type }}" base_id="{{ base_id.value }}" base_id_window="{{ component.base_id_window }}"/>
+        {%- set __ = base_id.update({'value': base_id.value|int + cookiecutter.internal_use.base_id.interval|int }) -%}
+    {%- endif -%}
+{%- endfor %}
+
+    <!-- Connections -->
+
+    <!-- Communications driver connections -->
+{% if cookiecutter.deployment_target_platform_support == "Arduino" %}
+    <connection name="CommunicationRecv">
+        <source component="groundInterface" port="readPoll" type="Fw::BufferSend" num="0"/>
+        <target component="uartDriver" port="serialRecvFwBuf" type="Fw::BufferSend" num="0"/>
+    </connection>
+    <connection name="CommunicationSend">
+        <source component="groundInterface" port="write" type="Fw::BufferSend" num="0"/>
+        <target component="uartDriver" port="serialSendFwBuf" type="Fw::BufferSend" num="0"/>
+    </connection>
+{%- else %}
+    <connection name="UplinkDrvAllocate">
+        <source component="comm" port="allocate" type="Fw::BufferGet" num="0"/>
+        <target component="staticMemory" port="bufferAllocate" type="Fw::BufferGet" num="0"/>
+    </connection>
+    <connection name="UplinkRecv">
+        <source component="comm" port="recv" type="Drv::ByteStreamSend" num="0"/>
+        <target component="uplink" port="framedIn" type="Drv::ByteStreamSend" num="0"/>
+    </connection>
+    <connection name="UplinkDeallocate">
+        <source component="uplink" port="framedDeallocate" type="Fw::BufferSend" num="0"/>
+        <target component="staticMemory" port="bufferDeallocate" type="Fw::BufferSend" num="0"/>
+    </connection>
+{%- endif %}
+
+    <!-- Uplink data connections -->
+
+    <connection name="UplinkCommands">
+{%- if cookiecutter.deployment_target_platform_support == "Arduino" %}
+        <source component="groundInterface" port="uplinkPort" type="Com" num="0"/>
+{%- else %}
+        <source component="uplink" port="comOut" type="Com" num="0"/>
+{%- endif %}
+        <target component="cmdDisp" port="seqCmdBuff" type="Com" num="0"/>
+    </connection>
+{%- if cookiecutter.deployment_file_xfer_support == "yes" %}
+    <connection name="UplinkFileAllocate">
+        <source component="uplink" port="bufferAllocate" type="BufferGet" num="0"/>
+        <target component="fileUplinkBufferManager" port="bufferGetCallee" type="BufferGet" num="0"/>
+    </connection>
+    <connection name="UplinkBuffers">
+        <source component="uplink" port="bufferOut" type="BufferSend" num="0"/>
+        <target component="fileUplink" port="bufferSendIn" type="BufferSend" num="0"/>
+    </connection>
+    <connection name="UplinkFileAllocate">
+        <source component="uplink" port="bufferDeallocate" type="BufferSend" num="0"/>
+        <target component="fileUplinkBufferManager" port="bufferSendIn" type="BufferSend" num="0"/>
+    </connection>
+    <connection name="fileUplinkBuffIn">
+        <source component="fileUplink" port="bufferSendOut" type="BufferSend" num="0"/>
+        <target component="fileUplinkBufferManager" port="bufferSendIn" type="BufferSend" num="0"/>
+    </connection>
+{%- endif %}
+
+    <!-- Downlink ports -->
+{% if cookiecutter.deployment_target_platform_support == "Arduino" %}
+{%- else %}
+    <connection name="DownlinkAllocate">
+        <source component="downlink" port="framedAllocate" type="Fw::BufferGet" num="0"/>
+        <target component="staticMemory" port="bufferAllocate" type="Drv::BufferGet" num="1"/>
+    </connection>
+    <connection name="DownlinkSend">
+        <source component="downlink" port="framedOut" type="Fw::BufferSend" num="0"/>
+        <target component="comm" port="send" type="Drv::ByteStreamSend" num="0"/>
+    </connection>
+    <connection name="DownlinkDeallocate">
+        <source component="comm" port="deallocate" type="Fw::BufferSend" num="0"/>
+        <target component="staticMemory" port="bufferDeallocate" type="Fw::BufferSend" num="1"/>
+    </connection>
+{%- endif %}
+
+    <!-- Downlink data connections -->
+
+    <connection name="eventLoggerPkts">
+        <source component="eventLogger" port="PktSend" type="Com" num="0"/>
+{%- if cookiecutter.deployment_target_platform_support == "Arduino" %}
+        <target component="groundInterface" port="downlinkPort" type="Com" num="0"/>
+{%- else %}
+        <target component="downlink" port="comIn" type="Com" num="0"/>
+{%- endif %}
+    </connection>
+    <connection name="chanTlmPkts">
+        <source component="chanTlm" port="PktSend" type="Com" num="0"/>
+{%- if cookiecutter.deployment_target_platform_support == "Arduino" %}
+        <target component="groundInterface" port="downlinkPort" type="Com" num="0"/>
+{%- else %}
+        <target component="downlink" port="comIn" type="Com" num="0"/>
+{%- endif %}
+    </connection>
+{%- if cookiecutter.deployment_file_xfer_support == "yes" %}
+    <connection name="fileDownlinkBufferSend">
+        <source component="fileDownlink" port="bufferSendOut" type="BufferSend" num="0"/>
+        <target component="downlink" port="bufferIn" type="BufferSend" num="0"/>
+    </connection>
+    <connection name="fileDownlinkBufferReturn">
+        <source component="downlink" port="bufferDeallocate" type="BufferSend" num="0"/>
+        <target component="fileDownlink" port="bufferReturn" type="BufferSend" num="0"/>
+    </connection>
+{%- endif %}
+
+    <!-- Command Registration/Dispatch/Reply Connections -->
+
+    <!-- Command Registration Ports - Registration port number must match dispatch port for each component -->
+{% set cmd_count = [] -%}{#- Counting list length is needed to defeat jinja scoping rules -#}
+{%- for component in cookiecutter.internal_use.components %}
+    {%- if (component.use == 'yes') and (component.cmds.connect != 'no') %}
+    <connection name="{{ component.instance }}CmdReg">
+        <source component="{{ component.instance }}" port="{{ component.cmds.reg }}" type="CmdReg" num="0"/>
+        <target component="cmdDisp" port="compCmdReg" type="CmdReg" num="{{ cmd_count|length }}"/>
+    </connection>
+        {%- set __ = cmd_count.append(1) -%}
+    {%- endif -%}
+{%- endfor %}
+
+    <!-- Command Dispatch Ports - Dispatch port number must match registration port for each component -->
+{% set cmd_count = [] -%}{#- Counting list length is needed to defeat jinja scoping rules -#}
+{%- for component in cookiecutter.internal_use.components %}
+    {%- if (component.use == 'yes') and (component.cmds.connect != 'no') %}
+    <connection name="{{ component.instance }}CmdDisp">
+        <source component="cmdDisp" port="compCmdSend" type="Cmd" num="{{ cmd_count|length }}"/>
+        <target component="{{ component.instance }}" port="{{ component.cmds.disp }}" type="Cmd" num="0"/>
+    </connection>
+        {%- set __ = cmd_count.append(1) -%}
+    {%- endif -%}
+{%- endfor %}
+
+    <!-- Command Reply Ports - Go to the same response port on the dispatcher -->
+{% for component in cookiecutter.internal_use.components %}
+    {%- if (component.use == 'yes') and (component.cmds.connect != 'no') %}
+    <connection name="{{ component.instance }}CmdReply">
+        <source component="{{ component.instance }}" port="{{ component.cmds.reply }}" type="CmdResponse" num="0"/>
+        <target component="cmdDisp" port="compCmdStat" type="CmdResponse" num="0"/>
+    </connection>
+    {%- endif -%}
+{%- endfor %}
+
+    <!-- Sequencer Connections - should not conflict with uplink port -->
+{% if cookiecutter.deployment_command_sequence_support == "yes" %}
+    <connection name="SeqCompStatus">
+        <source component="cmdDisp" port="seqCmdStatus" type="CmdResponse" num="1"/>
+        <target component="cmdSeq" port="cmdResponseIn" type="CmdResponse" num="0"/>
+    </connection>
+    <!-- Input port number needs to be the same as previous dispatch -->
+    <connection name="SeqCmdSend">
+        <source component="cmdSeq" port="comCmdOut" type="Com" num="0"/>
+        <target component="cmdDisp" port="seqCmdBuff" type="Com" num="1"/>
+    </connection>
+{%- endif %}
+
+    <!-- Event Logger Binary Connections -->
+{% for component in cookiecutter.internal_use.components %}
+    {%- if (component.use == 'yes') and (component.events != 'no') %}
+    <connection name="{{ component.instance }}Log">
+        <source component="{{ component.instance }}" port="{{ component.events }}" type="Log" num="0"/>
+        <target component="eventLogger" port="LogRecv" type="Log" num="0"/>
+    </connection>
+    {%- endif -%}
+{%- endfor %}
+
+    <!-- Event Logger Text Connections -->
+{% if cookiecutter.deployment_event_text_log_support == "yes" %}
+{%- for component in cookiecutter.internal_use.components %}
+    {%- if (component.use == 'yes') and (component.textevents != 'no') %}
+    <connection name="{{ component.instance }}TextLog">
+        <source component="{{ component.instance }}" port="{{ component.textevents }}" type="LogText" num="0"/>
+        <target component="textLogger" port="TextLogger" type="LogText" num="0"/>
+    </connection>
+    {%- endif -%}
+{%- endfor %}
+{%- endif %}
+
+    <!-- Telemetry Connections -->
+{% for component in cookiecutter.internal_use.components %}
+    {%- if (component.use == 'yes') and (component.tlm != 'no') %}
+    <connection name="{{ component.instance }}Tlm">
+        <source component="{{ component.instance }}" port="{{ component.tlm }}" type="Tlm" num="0"/>
+        <target component="chanTlm" port="TlmRecv" type="Tlm" num="0"/>
+    </connection>
+    {%- endif -%}
+{%- endfor %}
+
+    <!-- Parameter Connections -->
+{% if cookiecutter.deployment_parameter_support == "yes" %}
+    <connection name="{{cookiecutter.component_instance_name}}PrmGet">
+        <source component="{{cookiecutter.component_instance_name}}" port="ParamGet" type="PrmGet" num="0"/>
+        <target component="{{cookiecutter.internal_use.prm_comp}}" port="getPrm" type="PrmGet" num="0"/>
+    </connection>
+    <connection name="{{cookiecutter.component_instance_name}}PrmSet">
+        <source component="{{cookiecutter.component_instance_name}}" port="ParamSet" type="PrmSet" num="0"/>
+        <target component="{{cookiecutter.internal_use.prm_comp}}" port="setPrm" type="PrmSet" num="0"/>
+    </connection>
+{%- endif %}
+
+    <!-- Time Connections -->
+{% for component in cookiecutter.internal_use.components %}
+    {%- if (component.use == 'yes') and (component.time != 'no') %}
+    <connection name="{{ component.instance }}Time">
+        <source component="{{ component.instance }}" port="{{ component.time }}" type="Time" num="0"/>
+        <target component="{% if cookiecutter.deployment_target_platform_support != 'Arduino' %}linuxTime{% else %}arduinoTime{% endif %}" port="timeGetPort" type="Time" num="0"/>
+    </connection>
+    {%- endif -%}
+{%- endfor %}
+{% if cookiecutter.deployment_target_platform_support == "Arduino" %}
+    <!-- Connect the {{cookiecutter.component_instance_name}} to a GPIO -->
+    <connection name="ledGpioConn">
+        <source component="{{cookiecutter.component_instance_name}}" port="gpio" type="GpioWrite" num="0"/>
+        <target component="ledGpio" port="gpioWrite" type="GpioWrite" num="0"/>
+    </connection>
+{%- endif %}
+
+    <!-- Rate Group Connections -->
+
+{%- if cookiecutter.deployment_target_platform_support == "Arduino" %}
+    <!-- Connect the Hardware Driver to the rate group driver -->
+    <connection name="hardwareDriverConn">
+        <source component="hardwareRateDriver" port="CycleOut" type="Cycle" num="0"/>
+        <target component="rateGroupDriverComp" port="CycleIn" type="Cycle" num="0"/>
+    </connection>
+{%- endif %}
+
+    <!-- Rate Group 1 -->
+
+    <connection name="rateGroup1DriverComp">
+        <source component="rateGroupDriverComp" port="CycleOut" type="Cycle" num="0"/>
+        <target component="rateGroup1Comp" port="CycleIn" type="Cycle" num="0"/>
+    </connection>
+    <connection name="{{cookiecutter.component_instance_name}}Rg">
+        <source component="rateGroup1Comp" port="RateGroupMemberOut" type="Sched" num="0"/>
+        <target component="{{cookiecutter.component_instance_name}}" port="schedIn" type="Sched" num="0"/>
+    </connection>
+{%- if cookiecutter.deployment_target_platform_support == "Arduino" %}
+    <connection name="uartDriverRg">
+        <source component="rateGroup1Comp" port="RateGroupMemberOut" type="Sched" num="1"/>
+        <target component="uartDriver" port="reportTlm" type="Sched" num="0"/>
+    </connection>
+    <connection name="groundIfRg">
+        <source component="rateGroup1Comp" port="RateGroupMemberOut" type="Sched" num="2"/>
+        <target component="groundInterface" port="schedIn" type="Sched" num="0"/>
+    </connection>
+{%- endif %}
+    <connection name="Rg1ChTlm">
+         <source component="rateGroup1Comp" port="RateGroupMemberOut" type="Sched" num="3"/>
+         <target component="chanTlm" port="Run" type="Sched" num="0"/>
+    </connection>
+{%- if cookiecutter.deployment_file_xfer_support == "yes" %}
+    <connection name="Rg1FileDown">
+         <source component="rateGroup1Comp" port="RateGroupMemberOut" type="Sched" num="4"/>
+         <target component="fileDownlink" port="Run" type="Sched" num="0"/>
+    </connection>
+{%- endif %}
+{% if cookiecutter.deployment_health_support == "yes" -%}
+    <connection name="Rg1Health">
+         <source component="rateGroup1Comp" port="RateGroupMemberOut" type="Sched" num="5"/>
+         <target component="health" port="Run" type="Sched" num="0"/>
+    </connection>
+{%- endif %}
+
+    <!-- Rate Group 2 -->
+    <!-- <connection name="Rg2Drv">
+        <source component="rateGroupDriverComp" port="CycleOut" type="Cycle" num="1"/>
+        <target component="rateGroup2Comp" port="CycleIn" type="Cycle" num="0"/>
+    </connection>
+    <connection name="Rg2Seq">
+         <source component="rateGroup2Comp" port="RateGroupMemberOut" type="Sched" num="0"/>
+         <target component="cmdSeq" port="schedIn" type="Sched" num="0"/>
+    </connection>
+    <connection name="Rg2SendBuff">
+         <source component="rateGroup2Comp" port="RateGroupMemberOut" type="Sched" num="1"/>
+         <target component="sendBuffComp" port="SchedIn" type="Sched" num="0"/>
+    </connection> -->
+
+    <!-- Rate Group 3 -->
+    <!-- <connection name="rateGroup3DriverComp">
+        <source component="rateGroupDriverComp" port="CycleOut" type="Cycle" num="2"/>
+        <target component="rateGroup3Comp" port="CycleIn" type="Cycle" num="0"/>
+    </connection>
+
+    <connection name="Rg3Health">
+         <source component="rateGroup3Comp" port="RateGroupMemberOut" type="Sched" num="0"/>
+         <target component="health" port="Run" type="Sched" num="0"/>
+    </connection>
+    <connection name="Rg3BlkDrv">
+         <source component="rateGroup3Comp" port="RateGroupMemberOut" type="Sched" num="2"/>
+         <target component="blockDrv" port="Sched" type="Sched" num="0"/>
+    </connection> -->
+{%- if cookiecutter.deployment_file_xfer_support == "yes" %}
+    <!-- Note: This is optional if BufferManager stats are desired -->
+    <!-- <connection name="Rg3UpBuffMan">
+         <source component="rateGroup3Comp" port="RateGroupMemberOut" type="Sched" num="3"/>
+         <target component="fileUplinkBufferManager" port="schedIn" type="Sched" num="0"/>
+    </connection> -->
+{%- endif %}
+
+    <!-- Health Connections -->
+{% if cookiecutter.deployment_health_support == "yes" %}
+    <!-- The PingSend output port number should match the PingReturn input port number -->
+    <!-- Each port number pair must be unique -->
+    <!-- This order must match the table in Topology.cpp -->
+{% set health_count = [] -%}{#- Counting list length is needed to defeat jinja scoping rules -#}
+{%- for component in cookiecutter.internal_use.components %}
+    {%- if (component.use == 'yes') and (component.health.connect == 'yes') %}
+    <connection name="{{ component.instance }}PingSend">
+         <source component="{{ component.instance }}" port="{{ component.health.out }}" type="Ping" num="0"/>
+         <target component="health" port="PingReturn" type="Ping" num="{{ health_count|length }}"/>
+    </connection>
+    <connection name="{{ component.instance }}PingRecv">
+         <source component="health" port="PingSend" type="Ping" num="{{ health_count|length }}"/>
+         <target component="{{ component.instance }}" port="{{ component.health.in }}" type="Ping" num="0"/>
+    </connection>
+        {%- set __ = health_count.append(1) -%}
+    {%- endif -%}
+{%- endfor %}
+{%- endif %}
+
+    <!-- Fault Connections -->
+{% if cookiecutter.deployment_target_platform_support != "Arduino" %}
+    <connection name="eventLoggerFatalOut">
+        <source component="eventLogger" port="FatalAnnounce" type="FatalEvent" num="0"/>
+        <target component="fatalHandler" port="FatalReceive" type="FatalEvent" num="0"/>
+    </connection>
+{%- endif %}
+
+</assembly>

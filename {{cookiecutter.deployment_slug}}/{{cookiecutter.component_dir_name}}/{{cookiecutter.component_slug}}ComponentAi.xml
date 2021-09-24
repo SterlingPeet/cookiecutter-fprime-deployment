@@ -1,0 +1,78 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<?xml-model href="{{cookiecutter.component_path_to_fprime_root}}/../Autocoders/Python/schema/default/component_schema.rng" type="application/xml" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<component name="{{cookiecutter.component_slug}}" kind="{{cookiecutter.component_kind}}" namespace="{{cookiecutter.component_namespace}}">
+    <!-- Example of importing a port type -->
+    <import_port_type>Svc/Sched/SchedPortAi.xml</import_port_type>
+    <import_port_type>Drv/GpioDriverPorts/GpioWritePortAi.xml</import_port_type>
+{%- if cookiecutter.component_kind == 'active' %}
+    <import_port_type>Svc/Ping/PingPortAi.xml</import_port_type>
+{%- endif %}
+    <ports>
+        <!-- Input ports must be of kind "sync_input" or "async_input" or "guarded_input" -->
+        <!-- Input sched port -->
+{%- if cookiecutter.component_kind == 'active' %}
+        <port name="schedIn" data_type="Svc::Sched" kind="async_input" max_number="1">
+{%- else %}
+        <port name="schedIn" data_type="Svc::Sched" kind="sync_input" max_number="1">
+{%- endif %}
+        </port>
+        <port name="gpio" data_type="Drv::GpioWrite" kind="output" max_number="1">
+        </port>
+{%- if cookiecutter.component_kind == 'active' %}
+        <!-- Health Ping Ports -->
+        <port name="pingIn" data_type="Ping" kind="async_input" max_number="1">
+            <comment>Ping input port for health</comment>
+        </port>
+
+        <port name="pingOut" data_type="Ping" kind="output" max_number="1">
+            <comment>Ping output port for health</comment>
+        </port>
+{%- endif %}
+    </ports>
+{%- if cookiecutter.deployment_parameter_support == "yes" %}
+    <commands>
+        <command kind="sync" opcode="0" mnemonic="downlinkParams">
+            <comment>
+            Command to telemeter the current parameter values in use.
+            </comment>
+        </command>
+    </commands>
+    <events>
+        <event id="0" name="{{cookiecutter.component_slug}}ParameterUpdated" severity="ACTIVITY_LO" format_string="{{cookiecutter.component_name}} Parameter %d was updated">
+            <comment>
+            Report parameter update
+            </comment>
+            <args>
+                <arg name="id" type="U32">
+                    <comment>The ID argument</comment>
+                </arg>
+            </args>
+        </event>
+    </events>
+{%- endif %}
+    <telemetry>
+        <channel id="0" name="numBlinks" data_type="U32">
+            <comment>
+            Number of blinks since startup
+            </comment>
+        </channel>
+{%- if cookiecutter.deployment_parameter_support == "yes" %}
+        <channel id="1" name="blinkDecimate" data_type="U8">
+            <comment>
+            Current setting of the blinkDecimate parameter.
+            </comment>
+        </channel>
+{%- endif %}
+    </telemetry>
+{%- if cookiecutter.deployment_parameter_support == "yes" %}
+    <parameters>
+        <!-- The parameter set_opcode and save_opcode live in the same -->
+        <!-- address space as your commands, so make sure they don't overlap!! -->
+        <parameter id="0" set_opcode="1" save_opcode="2" name="blinkDecimate" data_type="U8" default="2">
+            <comment>
+            The number of sched cycles to skip before changing LED state, higher is longer.
+            </comment>
+        </parameter>
+    </parameters>
+{%- endif %}
+</component>
